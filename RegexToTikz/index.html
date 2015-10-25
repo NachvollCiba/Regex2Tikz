@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Regex to Tikz</title>
+    <script src="automaton.js"></script>
+    <script src="tikzCreation.js"></script>
+    <script type="text/javascript">
+        function submit() {
+
+            var regex = document.getElementById("regex").value;
+            var parser = new RegexParser(regex);
+            var nfa = parser.parse();
+            var tikz = convertToTikz(nfa);
+
+            var resultDiv = document.getElementById("result");
+            var resultTA = document.createElement("textarea");
+            resultTA.value = tikz;
+            resultDiv.appendChild(resultTA);
+        }
+    </script>
+</head>
+<body style="text-align: center">
+<h2>Insert a regular expression</h2>
+<input type="text" id="regex" placeholder="e.g. (a|b)*c">
+<input type="button" value="Generate Automaton" onclick="submit()">
+
+<div id="result"></div>
+
+</body>
+</html>
