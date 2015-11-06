@@ -5,27 +5,51 @@
     <title>Regex to Tikz</title>
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
+    <script src="lib/jquery-1.11.3.min.js"></script>
     <script type="text/javascript">
         function submit() {
+            var regex = $("#regex").val();
+            try {
+                var parser = new RegexParser(regex);
+                var nfa = parser.parse();
 
-            var regex = document.getElementById("regex").value;
-            var parser = new RegexParser(regex);
-            var nfa = parser.parse();
-            var tikz = convertToTikz(nfa);
+                var tikz = convertToTikz(nfa);
 
-            var resultDiv = document.getElementById("result");
-            var resultTA = document.createElement("textarea");
-            resultTA.value = tikz;
-            resultDiv.appendChild(resultTA);
+                $("#result").show();
+                $("#resultTikz").val(tikz);
+
+                $.ajax({
+                    url: encodeURI("render.php"),
+                    type: "POST",
+                    data: "tikz=" + tikz,
+                    success: function (data) {
+                        var img = "data:image/png;base64," + data;
+                        $("#resultImg").attr("src", img);
+                        $("#resultTikz").append(img);
+                    },
+                    error: function (xhr, textStatus) {
+                        alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                    }
+                }); //$.ajax
+
+            } catch (e) {
+                $("#resultTikz").val(e.toString()).show();
+            }
         }
     </script>
 </head>
 <body style="text-align: center">
 <h2>Insert a regular expression</h2>
-<input type="text" id="regex" placeholder="e.g. (a|b)*c">
+<input type="text" id="regex" placeholder="e.g. (a|b)*c" autofocus="true">
 <input type="button" value="Generate Automaton" onclick="submit()">
 
-<div id="result"></div>
+<div hidden id="result">
+    <h3>Resulting TIKZ Code</h3>
+    <textarea rows="20" cols="50" id="resultTikz" disabled></textarea><br>
+
+    <h3>Rendered</h3>
+    <img src="" id="resultImg"/>
+</div>
 
 </body>
 </html>

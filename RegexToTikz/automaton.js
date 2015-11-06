@@ -4,6 +4,17 @@
 
 var EPS = ""; // constant for epsilon
 
+//
+function nfa2dfa(states) {
+    // empty automaton
+    if (states.length == 0) {
+        return [];
+    }
+
+    states.forEach(function (state) {
+
+    });
+}
 
 // class for NFA states
 function State(name, isStart, isFinal) {
@@ -26,7 +37,7 @@ function State(name, isStart, isFinal) {
         } else {
             return [];
         }
-    }
+    };
 
     this.addNextState = function(symb, nextState) {
         if (! (symb in this.transitions)) {
@@ -34,11 +45,11 @@ function State(name, isStart, isFinal) {
         }
 
         this.transitions[symb].push(nextState);
-    }
+    };
 
     this.merge = function(state) {
         this.addNextState(EPS, state);
-    }
+    };
 }
 
 // a parser for regular expressions
@@ -55,7 +66,7 @@ function RegexParser(regex) {
         nfa[nfa.length-1].isFinal = true;
 
         return nfa;
-    }
+    };
 
     this.regex = function() {
         /**
@@ -98,45 +109,48 @@ function RegexParser(regex) {
         }
 
         return nfa1;
-    }
+    };
 
     // grammar rule:
     // term = base'*'* term?
     this.term = function() {
         var nfa_base = this.base();
 
+        var _in, out;
+
         while (this.input.length > 0 && this.input[0] === "*") {
             this.popInput();
 
-            var _in = nfa_base[0];
-            var out = nfa_base[nfa_base.length-1];
+            _in = nfa_base[0];
+            out = nfa_base[nfa_base.length - 1];
 
-            _in.merge($out);
+            _in.merge(out);
             out.merge(_in);
         }
 
         if (this.input.length > 0 && this.input[0] !== "|") {
             var nfa_term = this.term();
 
-            var out = nfa_base[nfa_base.length-1];
-            var _in = nfa_term[0];
+            out = nfa_base[nfa_base.length - 1];
+            _in = nfa_term[0];
             out.merge(_in);
             nfa_base = nfa_base.concat(nfa_term);
         }
 
         return nfa_base;
-    }
+    };
 
     // grammar rule:
     // base = char | (regex)
     this.base = function() {
         var next = this.popInput();
+        var nfa;
 
         if (next === "(") {
-            var nfa = this.regex();
+            nfa = this.regex();
         } else if (validSymbol(next)) {
             // build a nfa for a single character
-            var nfa = [new State(this.lastID++), new State(this.lastID++)];
+            nfa = [new State(this.lastID++), new State(this.lastID++)];
             nfa[0].addNextState(next, nfa[1]);
         } else {
             throw ("Expected '(' or an alphanumeric character, got " + next);
@@ -147,14 +161,14 @@ function RegexParser(regex) {
         }
 
         return nfa;
-    }
+    };
 
     // removes and returns the first char from the input string
     this.popInput = function() {
         var first = this.input[0];
         this.input = this.input.substring(1);
         return first;
-    }
+    };
 }
 
 function validSymbol(symb){
