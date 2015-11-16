@@ -6,9 +6,11 @@ function convertToTikz(nfa) {
     var tikz  = "\\usetikzlibrary{automata, positioning}\n";
     tikz += "\\begin{tikzpicture}\n";
 
+    layoutAut(nfa);
+
     // create a tikz node for each state
     for(var i = 0; i < nfa.length; i++) {
-        tikz += generateStateCode(nfa[i], 2*i, 0) + "\n";
+        tikz += generateStateCode(nfa[i]) + "\n";
     }
 
     // create the transitions for each state as a tikz path
@@ -27,12 +29,12 @@ function convertToTikz(nfa) {
     return tikz + "\\end{tikzpicture}";
 }
 
-function generateStateCode(state, posX, posY) {
+function generateStateCode(state) {
     var name = state.name;
     var accepting = state.isFinal? ",accepting":"";
     var start = state.isStart? ",initial":"";
     return "\\node[state" + accepting + start + "] (" + name +
-        ") at (" + posX + "," + posY + ") {" + name + "};";
+        ") at (" + state.position[0].toFixed(2) + "," + state.position[1].toFixed(2) + ") {" + name + "};";
 }
 
 function generateTransitionsCode(state, symb, nextState) {

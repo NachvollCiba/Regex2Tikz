@@ -16,6 +16,120 @@ function nfa2dfa(states) {
     });
 }
 
+function epsClosure(state) {
+    var closure = new Set();
+    closure.put(state); // every state is trivially part of its own eps-closure
+
+    // add the eps-closure of every e-connected state
+    var epsConnected = state.transition[EPS];
+    for (var i = 0; i < epsConnected.length; i++) {
+        if (!closure.isElem(epsConnected[i])) {
+            closure.putAll(epsClosure(epsConnected[i]))
+        }
+    }
+
+    return closure;
+}
+
+function minimize(dfa) {
+    // TODO implement
+}
+
+function layoutAut(states) {
+    const NODE_CHARGE = .1;
+    const ITER_THRESHOLD = 100;
+    const EDGE_CONST = .1;
+
+    //// initialize all states position
+    //var frak = 2 * Math.PI / states.length;
+    //var r = states.length / (2 * Math.PI);
+    //for (var j=0; j<states.length; j++) {
+    //    states[j].position[0] = r * Math.cos(j * frak);
+    //    states[j].position[1] = r * Math.sin(j * frak);
+    //}
+
+    for (var i = 0; i < ITER_THRESHOLD; i++) {
+        var totalDelta = 0;
+        var deltaE = 0;
+        var deltaD = 0;
+
+        // initialize movDeltas
+        var movDeltas = [];
+        for (var x = 0; x < states.length; x++) {
+            movDeltas[x] = [0, 0];
+        }
+
+        for (x = 0; x < states.length; x++) {
+            // collect all connected states
+            var conStates = listOfConnectedStates(states[x]);
+            var movDelta = [0, 0];
+
+            // calculate repulsive force for every other state
+            for (var y = x + 1; y < states.length; y++) {
+                var dist = euclideanDistance(states[x].position, states[y].position);
+                var val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
+                var unit = unitVector(vecDifference(states[x].position, states[y].position));
+
+                movDelta[0] += val * unit[0];
+                movDelta[1] += val * unit[1];
+                deltaE += val;
+
+                if (states[y].name in conStates) {
+                    val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
+
+                    movDelta[0] += val * unit[0];
+                    movDelta[1] += val * unit[1];
+                    deltaD = val;
+                }
+
+                movDeltas[x][0] += movDelta[0];
+                movDeltas[x][1] += movDelta[1];
+
+                movDeltas[y][0] -= movDelta[0];
+                movDeltas[y][1] -= movDelta[1];
+
+                totalDelta += euclideanDistance([0, 0], movDelta);
+                movDelta = [0, 0];
+            }
+        }
+
+        // apply translations
+        for (x = 0; x < states.length; x++) {
+            states[x].position[0] += movDeltas[x][0];
+            states[x].position[1] += movDeltas[x][1];
+        }
+    }
+}
+
+function unitVector(vec) {
+    var distance = euclideanDistance([0, 0], vec);
+    return [vec[0] / distance, vec[1] / distance];
+
+}
+
+function euclideanDistance(vec1, vec2) {
+    return Math.sqrt(Math.pow(vec1[0] - vec2[0], 2) +
+        Math.pow(vec1[1] - vec2[1], 2));
+}
+
+function vecDifference(vec1, vec2) {
+    return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
+}
+
+function listOfConnectedStates(state) {
+    var conStates = [];
+    for (var symb in state.transitions) {
+        // add all next states to the conStates set
+        for (y = 0; y < state.transitions[symb].length; y++) {
+            var nextState = state.transitions[symb][y];
+            if (nextState != state) {
+                conStates[nextState.name] = true;
+            }
+        }
+    }
+    return conStates;
+}
+
 // class for NFA states
 function State(name, isStart, isFinal) {
     if (typeof(isStart)==='undefined') {
@@ -29,7 +143,9 @@ function State(name, isStart, isFinal) {
     this.isStart = isStart;
     this.isFinal = isFinal;
 
-    this.transitions = {};
+    this.transitions = Object.create(null);
+
+    this.position = [Math.random(), Math.random()]; // used for graph drawing
 
     this.nextStates = function(symb) {
         if (symb in this.transitions) {
@@ -52,8 +168,20 @@ function State(name, isStart, isFinal) {
     };
 }
 
-// a parser for regular expressions
+
 function RegexParser(regex) {
+    /**
+     * This class implements a simple LL(1) - Parser for regular expressions.
+     * Will compile the regex into an nondeterministic finite automaton (NFA)
+     *
+     *  LL(1) - Grammar for regexes:
+     *
+     * regex -> term | term "|" regex
+     * term -> factor term
+     * factor -> atom "*"*
+     * atom -> alphanum | (regex)
+     */
+
     this.input = regex.replace(/\s/g, ""); // remove all whitespace
     this.lastID = 0;
 
@@ -70,29 +198,32 @@ function RegexParser(regex) {
 
     this.regex = function() {
         /**
-         * Grammar for regexes:
-         *
-         * regex = term | term '|' term
-         * term = base'*'* term?
-         * base = char | (regex)
+         * Corresponding grammar rule:
+         * regex -> term | term "|" regex
          */
 
-        var nfa1 = this.term();
+        var next = this.peekInput();
+        if (this.hasInput() && (next == "(" || validSymbol(next))) {
+            var nfa = this.term();
+        } else {
+            throw ("Expected '(' or any alphanumeric character, got " + next);
+        }
 
-        // make decision based on next character
-        if (this.input.length > 0) {
-            var next = this.popInput();
+        // check if there is a union term following
+        next = this.peekInput();
+        if (this.hasInput() && next == "|") {
+            this.popInput();
 
-            // invalid character
-            if (next != "|") {
-                throw ("Expected '|', got " + next);
+            next = this.peekInput();
+            if (next != "(" && !validSymbol(next)) {
+                throw ("Expected '(' or any alphanumeric character, got " + next);
             }
 
-            var nfa2 = this.term();
+            var nfa2 = this.regex();
 
             // retrieve in- and out states
-            var in1 = nfa1[0], in2 = nfa2[0];
-            var out1 = nfa1[nfa1.length-1], out2 = nfa2[nfa2.length-1];
+            var in1 = nfa[0], in2 = nfa2[0];
+            var out1 = nfa[nfa.length - 1], out2 = nfa2[nfa2.length - 1];
 
             // create new in and out state
             var _in = new State(this.lastID++);
@@ -103,71 +234,119 @@ function RegexParser(regex) {
             out1.merge(out); out2.merge(out);
 
             // rebuild the nfa state array
-            nfa1 = nfa1.concat(nfa2);
-            nfa1.unshift(_in);
-            nfa1.push(out);
-        }
-
-        return nfa1;
-    };
-
-    // grammar rule:
-    // term = base'*'* term?
-    this.term = function() {
-        var nfa_base = this.base();
-
-        var _in, out;
-
-        while (this.input.length > 0 && this.input[0] === "*") {
-            this.popInput();
-
-            _in = nfa_base[0];
-            out = nfa_base[nfa_base.length - 1];
-
-            _in.merge(out);
-            out.merge(_in);
-        }
-
-        if (this.input.length > 0 && this.input[0] !== "|") {
-            var nfa_term = this.term();
-
-            out = nfa_base[nfa_base.length - 1];
-            _in = nfa_term[0];
-            out.merge(_in);
-            nfa_base = nfa_base.concat(nfa_term);
-        }
-
-        return nfa_base;
-    };
-
-    // grammar rule:
-    // base = char | (regex)
-    this.base = function() {
-        var next = this.popInput();
-        var nfa;
-
-        if (next === "(") {
-            nfa = this.regex();
-        } else if (validSymbol(next)) {
-            // build a nfa for a single character
-            nfa = [new State(this.lastID++), new State(this.lastID++)];
-            nfa[0].addNextState(next, nfa[1]);
-        } else {
-            throw ("Expected '(' or an alphanumeric character, got " + next);
-        }
-
-        if (this.input[0] === ")") {
-            this.popInput();
+            nfa = nfa.concat(nfa2);
+            nfa.unshift(_in);
+            nfa.push(out);
         }
 
         return nfa;
     };
 
+    this.term = function () {
+        /**
+         * Corresponding grammar rule:
+         * term -> factor term?
+         */
+
+        var nfa = this.factor();
+
+        var next = this.peekInput();
+        if (this.hasInput() && (next == "(" || validSymbol(next))) {
+
+            var nfa2 = this.term();
+
+            // concatenate the nfas with an epsilon-transition
+            var out = nfa[nfa.length - 1];
+            var _in = nfa2[0];
+            out.merge(_in);
+
+            // merge the arrays
+            nfa = nfa.concat(nfa2);
+        }
+
+        return nfa;
+    };
+
+    this.factor = function () {
+        /**
+         * Corresponding grammar rule:
+         * factor -> atom "*"*
+         */
+
+        var nfa = this.atom();
+
+        while (this.hasInput() && this.peekInput() == "*") {
+            this.popInput(); // remove "*" from input
+
+            var nfaIn = nfa[0];
+            var nfaOut = nfa[nfa.length - 1];
+
+            var _in = new State(this.lastID++);
+            var out = new State(this.lastID++);
+
+            // add epsilon transitions
+            _in.merge(nfaIn);
+            nfaOut.merge(out);
+
+            _in.merge(out);
+            nfaOut.merge(nfaIn);
+
+            // add the states to the nfa array
+            nfa.unshift(_in);
+            nfa.push(out);
+        }
+
+        return nfa;
+    };
+
+    this.atom = function () {
+        /**
+         * Corresponding grammar rule:
+         * atom -> alphanum | (regex)
+         */
+
+        var next = this.popInput();
+        if (next == "(") {
+            var nfa = this.regex();
+
+            next = this.popInput();
+            if (next != ")") {
+                throw ("Expected ')', got " + next);
+            }
+
+            return nfa;
+        } else if (validSymbol(next)) {
+            var _in = new State(this.lastID++);
+            var out = new State(this.lastID++);
+
+            _in.addNextState(next, out);
+            return [_in, out];
+        } else {
+            throw ("Expected '(' or any alphanumeric character, got " + next);
+        }
+    };
+
     // removes and returns the first char from the input string
     this.popInput = function() {
+        if (!this.hasInput()) {
+            return null;
+        }
+
         var first = this.input[0];
         this.input = this.input.substring(1);
         return first;
+    };
+
+    this.peekInput = function () {
+        if (!this.hasInput()) {
+            return null;
+        }
+
+        return this.input[0];
+    };
+
+    this.hasInput = function () {
+        return this.input.length > 0;
     };
 }
 
