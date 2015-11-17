@@ -177,7 +177,7 @@ function RegexParser(regex) {
      *  LL(1) - Grammar for regexes:
      *
      * regex -> term | term "|" regex
-     * term -> factor term
+     * term -> factor term?
      * factor -> atom "*"*
      * atom -> alphanum | (regex)
      */

@@ -45,13 +45,23 @@
             var canvas = document.getElementById("drawCanvas");
             var ctx = canvas.getContext("2d");
 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            var zoom = 40;
+
+            const offsetX = canvas.width / 2;
+            const offsetY = canvas.height / 2;
+
+            const stateDia = .4 * zoom;
+            const stateRad = stateDia / 2;
+
             for (var i = 0; i < nfa.length; i++) {
                 var state = nfa[i];
-                var posX = state.position[0] * 30 + 250;
-                var posY = -state.position[1] * 30 + 250;
+                var posX = state.position[0] * zoom + offsetX;
+                var posY = -state.position[1] * zoom + offsetY;
 
                 ctx.beginPath();
-                ctx.arc(posX, posY, 15, 0, 2 * Math.PI);
+                ctx.arc(posX, posY, stateDia, 0, 2 * Math.PI);
                 ctx.stroke();
                 ctx.moveTo(posX, posY);
                 ctx.fillText(state.name, posX, posY);
@@ -60,17 +70,20 @@
                     var nextStates = state.transitions[symb];
 
                     for (var j = 0; j < nextStates.length; j++) {
-                        var otherX = nextStates[j].position[0] * 30 + 250;
-                        var otherY = -nextStates[j].position[1] * 30 + 250;
+                        var otherX = nextStates[j].position[0] * zoom + offsetX;
+                        var otherY = -nextStates[j].position[1] * zoom + offsetY;
 
+                        var dirX = otherX > posX ? 1 : -1;
+                        var dirY = otherY > posY ? 1 : -1;
+
+                        ctx.moveTo(posX, posY);
                         ctx.lineTo(otherX, otherY);
                         ctx.stroke();
-                        ctx.moveTo(posX, posY);
 
-                        var midX = (otherX - posX) / 2;
-                        var midY = (otherY - posY) / 2;
+                        var midX = (posX + (otherX - posX) / 2);
+                        var midY = (posY + (otherY - posY) / 2);
                         ctx.moveTo(midX, midY);
-
+                        symb = symb == EPS ? "€" : symb;
                         ctx.fillText(symb, midX, midY);
                     }
                 }
