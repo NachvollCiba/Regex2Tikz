@@ -6,7 +6,6 @@
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
-    <script src="datastructs.js"></script>
     <script type="text/javascript">
         function submit() {
             var regex = $("#regex").val();
@@ -17,9 +16,13 @@
                 var tikz = convertToTikz(nfa);
 
                 $("#result").show();
-                $("#resultTikz").val(tikz);
-                $("#resultImg").attr("src", "loading.gif");
-                drawAutomaton(nfa);
+                $("#alphDisplay").text(parser.alphabet);
+
+                $("#resultTikzNFA").val(tikz);
+                $("#resultImgNFA").attr("src", "loading.gif");
+
+                var canvas = document.getElementById("drawCanvasNFA");
+                drawAutomaton(nfa, canvas);
 
                 $.ajax({
                     url: encodeURI("render.php"),
@@ -27,22 +30,46 @@
                     data: "tikz=" + tikz,
                     success: function (data) {
                         var img = "data:image/png;base64," + data;
-                        $("#resultImg").attr("src", img);
-                        $("#resultTikz").append(img);
+                        $("#resultImgNFA").attr("src", img);
+                        $("#resultTikzNFA").append(img);
                     },
                     error: function (xhr, textStatus) {
-                        $("#resultImg").attr("src", "");
+                        $("#resultImgNFA").attr("src", "");
                         alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
                     }
-                }); //$.ajax
+                });
+
+                var dfa = nfa2dfa(nfa, parser.alphabet);
+                tikz = convertToTikz(dfa);
+
+                $("#resultTikzDFA").val(tikz);
+                $("#resultImgDFA").attr("src", "loading.gif");
+
+                canvas = document.getElementById("drawCanvasNFA");
+                drawAutomaton(dfa, canvas);
+
+                $.ajax({
+                    url: encodeURI("render.php"),
+                    type: "POST",
+                    data: "tikz=" + tikz,
+                    success: function (data) {
+                        var img = "data:image/png;base64," + data;
+                        $("#resultImgDFA").attr("src", img);
+                        $("#resultTikzDFA").append(img);
+                    },
+                    error: function (xhr, textStatus) {
+                        $("#resultImgDFA").attr("src", "");
+                        alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                    }
+                });
+
 
             } catch (e) {
-                $("#resultTikz").val(e.toString()).show();
+                $("#resultTikzNFA").val(e.stack).show();
             }
         }
 
-        function drawAutomaton(nfa) {
-            var canvas = document.getElementById("drawCanvas");
+        function drawAutomaton(nfa, canvas) {
             var ctx = canvas.getContext("2d");
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -98,12 +125,22 @@
 <input type="button" value="Generate Automaton" onclick="submit()">
 
 <div hidden id="result">
-    <h3>Resulting TIKZ Code</h3>
-    <textarea rows="20" cols="50" id="resultTikz" disabled></textarea><br>
-    <canvas id="drawCanvas" width="500" height="500"></canvas>
+    <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
+    <h2>Resulting NFA</h2>
+    <h3>TIKZ Code</h3>
+    <textarea rows="20" cols="50" id="resultTikzNFA" disabled></textarea><br>
+    <canvas id="drawCanvasNFA" width="500" height="500"></canvas>
 
     <h3>LATEX-Rendered</h3>
-    <img src="" id="resultImg"/>
+    <img src="" id="resultImgNFA"/>
+
+    <h2>Non-minimal powerset DFA</h2>
+    <h3>TIKZ Code</h3>
+    <textarea rows="20" cols="50" id="resultTikzDFA" disabled></textarea><br>
+    <canvas id="drawCanvasDFA" width="500" height="500"></canvas>
+
+    <h3>LATEX-Rendered</h3>
+    <img src="" id="resultImgDFA"/>
 </div>
 
 </body>

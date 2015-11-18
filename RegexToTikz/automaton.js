@@ -2,33 +2,107 @@
  * Created by dennis on 25/10/15.
  */
 
-var EPS = ""; // constant for epsilon
+const EPS = ""; // constant for epsilon
 
 //
-function nfa2dfa(states) {
+function nfa2dfa(nfa, alphabet) {
     // empty automaton
-    if (states.length == 0) {
+    if (nfa.length == 0) {
         return [];
     }
 
-    states.forEach(function (state) {
+    // build the eps-closure of the start state
+    var startClosure = epsClosure(nfa[0]);
+    var newStart = new State(potStateName(startClosure[0]), true, startClosure[1]);
 
-    });
+    var stack = []; // stack of state sets to work on
+    var potStates = Object.create(null); // dictionary state name => state
+
+    stack.push([startClosure[0], newStart.name]);
+    potStates[newStart.name] = newStart;
+
+    while (stack.length > 0) {
+        var next = stack.shift();
+
+        for (var i=0; i<alphabet.length; i++) {
+            var symb = alphabet[i];
+            var symbConnected = new Set();
+            var isFinal = false;
+
+            // collect all states that are connected with the alphabet symbol
+            for (var curState of next[0]) {
+                isFinal |= curState.isFinal;
+
+                for (var nextState of curState.nextStates(symb)) {
+                    symbConnected.add(nextState);
+                }
+            }
+
+            // build the eps closure of the set
+            var epsConnected = new Set();
+            for (var conState of symbConnected) {
+                var closure = epsClosure(conState);
+
+                for (var epsState of closure[0]) {
+                    epsConnected.add(epsState);
+                }
+
+                isFinal |= closure[1];
+            }
+
+            for (var epsConState of epsConnected) {
+                symbConnected.add(epsConState);
+            }
+
+            if (symbConnected.size > 0) {
+                var stateName = potStateName(symbConnected);
+
+                // create the set state if it does not exist
+                var potState = null;
+                if (stateName in potStates) {
+                    potState = potStates[stateName];
+                } else {
+                    potState = new State(stateName, false, isFinal);
+                    stack.push([symbConnected, stateName]);
+                    potStates[stateName] = potState;
+                }
+
+                // add the transition
+                var startState = potStates[next[1]];
+                startState.addNextState(symb, potState);
+            }
+        }
+    }
+}
+
+function potStateName(stateSet) {
+    var stateNames = [];
+    for (var  state of stateSet) {
+        stateNames.push(state.name);
+    }
+    return stateNames.sort();
 }
 
 function epsClosure(state) {
     var closure = new Set();
-    closure.put(state); // every state is trivially part of its own eps-closure
+    var hasFinal = state.isFinal;
+
+    closure.add(state); // every state is trivially part of its own eps-closure
 
     // add the eps-closure of every e-connected state
-    var epsConnected = state.transition[EPS];
+    var epsConnected = state.nextStates(EPS);
     for (var i = 0; i < epsConnected.length; i++) {
         if (!closure.isElem(epsConnected[i])) {
-            closure.putAll(epsClosure(epsConnected[i]))
+            var nextClosure = epsClosure(epsConnected[i]);
+
+            for (var epsState of nextClosure[0]) {
+                closure.add(epsState);
+            }
+            hasFinal |= nextClosure[1];
         }
     }
 
-    return closure;
+    return [closure, hasFinal];
 }
 
 function minimize(dfa) {
@@ -183,7 +257,16 @@ function RegexParser(regex) {
      */
 
     this.input = regex.replace(/\s/g, ""); // remove all whitespace
-    this.lastID = 0;
+
+    // compute the alphabet used by this regex
+    this.alphabet = [];
+    for (var i=0; i<this.input.length; i++) {
+        if (validSymbol(this.input[i])) {
+            this.alphabet.push(this.input[i]);
+        }
+    }
+
+    this.lastID = 0; // counter for state ids
 
     // parses the function and returns an nfa if the regex is valid
     this.parse = function() {

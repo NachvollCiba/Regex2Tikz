@@ -4,13 +4,17 @@
 
 function Set() {
     this.elemSet = Object.create(null);
+    this.length = 0;
 
     this.isElem = function (elem) {
         return elem in this.elemSet;
     };
 
     this.del = function (elem) {
-        delete this.elemSet[elem];
+        if (elem in this.elemSet) {
+            delete this.elemSet[elem];
+            this.length--;
+        }
     };
 
     this.delAll = function (otherSet) {
@@ -20,12 +24,21 @@ function Set() {
     };
 
     this.put = function (elem) {
-        this.elemSet[elem] = true;
+        if (!elem in this.elemSet) {
+            this.elemSet[elem] = true;
+            this.length++;
+        }
     };
 
-    this.putAll = function (otherSet) {
-        for (otherElem in otherSet) {
-            this.put(otherElem);
+    this.putAll = function (other) {
+        if (other.constructor == Array) {
+            for (var i=0; i<other.length; i++) {
+                this.put(other[i]);
+            }
+        } else if (other.constructor == Set) {
+            for (otherElem in other) {
+                this.put(otherElem);
+            }
         }
     };
 
@@ -41,7 +54,7 @@ function Set() {
 
         for (elem in this.elemSet) {
             if (other.isElem(elem)) {
-                intersec.add(elem);
+                intersec.put(elem);
             }
         }
     };

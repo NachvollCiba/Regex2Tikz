@@ -78,6 +78,17 @@ function get_quicklatex_svg($tikz) {
                 $raw = curl_exec($ch);
                 curl_close($ch);
 
+                $file = fopen("request.png", "w");
+                fwrite($file, $raw);
+                fclose($file);
+
+                $debug = fopen("debug.txt", "w");
+                fwrite($debug, "Body:" . PHP_EOL);
+                fwrite($debug, $body);
+                fwrite($debug, PHP_EOL . PHP_EOL . "URL:" . PHP_EOL);
+                fwrite($debug, $image_url);
+                fclose($debug);
+
                 return $raw;
             }
 
