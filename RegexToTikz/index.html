@@ -16,7 +16,10 @@
                 var tikz = convertToTikz(nfa);
 
                 $("#result").show();
-                $("#alphDisplay").text(parser.alphabet);
+
+                var alpha = [];
+                parser.alphabet.forEach(function(symb) { alpha.push(symb) });
+                $("#alphDisplay").text("{" + alpha.sort() + "}");
 
                 $("#resultTikzNFA").val(tikz);
                 $("#resultImgNFA").attr("src", "loading.gif");
@@ -45,7 +48,7 @@
                 $("#resultTikzDFA").val(tikz);
                 $("#resultImgDFA").attr("src", "loading.gif");
 
-                canvas = document.getElementById("drawCanvasNFA");
+                canvas = document.getElementById("drawCanvasDFA");
                 drawAutomaton(dfa, canvas);
 
                 $.ajax({
@@ -65,7 +68,7 @@
 
 
             } catch (e) {
-                $("#resultTikzNFA").val(e.stack).show();
+                console.log(e.stack);
             }
         }
 

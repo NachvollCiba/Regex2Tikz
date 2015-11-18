@@ -33,17 +33,21 @@ function generateStateCode(state) {
     var name = state.name;
     var accepting = state.isFinal? ",accepting":"";
     var start = state.isStart? ",initial":"";
-    return "\\node[state" + accepting + start + "] (" + name +
+    return "\\node[state" + accepting + start + "] (" +toInternalID(name) +
         ") at (" + state.position[0].toFixed(2) + "," + state.position[1].toFixed(2) + ") {" + name + "};";
 }
 
 function generateTransitionsCode(state, symb, nextState) {
-    var fromName = state.name;
-    var toName = nextState.name;
+    var fromName = toInternalID(state.name);
+    var toName = toInternalID(nextState.name);
 
     if (symb === EPS) {
         symb = "\\varepsilon";
     }
 
     return "(" + fromName + ") edge node [above] {\$" +symb + "\$} (" + toName + ")";
+}
+
+function toInternalID(name) {
+    return name.toString().replace(/\s/g, "").replace(",",""); // remove all whitespace and punctuation;
 }

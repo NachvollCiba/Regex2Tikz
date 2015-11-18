@@ -1,4 +1,4 @@
-/**
+ /**
  * Created by dennis on 25/10/15.
  */
 
@@ -14,6 +14,7 @@ function nfa2dfa(nfa, alphabet) {
     // build the eps-closure of the start state
     var startClosure = epsClosure(nfa[0]);
     var newStart = new State(potStateName(startClosure[0]), true, startClosure[1]);
+    var dfa = [newStart];
 
     var stack = []; // stack of state sets to work on
     var potStates = Object.create(null); // dictionary state name => state
@@ -23,9 +24,9 @@ function nfa2dfa(nfa, alphabet) {
 
     while (stack.length > 0) {
         var next = stack.shift();
+        console.log("Getting state " + next[1] + " from the stack");
 
-        for (var i=0; i<alphabet.length; i++) {
-            var symb = alphabet[i];
+        for (var symb of alphabet) {
             var symbConnected = new Set();
             var isFinal = false;
 
@@ -56,6 +57,7 @@ function nfa2dfa(nfa, alphabet) {
 
             if (symbConnected.size > 0) {
                 var stateName = potStateName(symbConnected);
+                console.log("Can get from " + next[1] + " to " + stateName + " via " + symb);
 
                 // create the set state if it does not exist
                 var potState = null;
@@ -65,6 +67,8 @@ function nfa2dfa(nfa, alphabet) {
                     potState = new State(stateName, false, isFinal);
                     stack.push([symbConnected, stateName]);
                     potStates[stateName] = potState;
+                    dfa.push(potState);
+                    console.log("Creating state " + stateName + " (" + stack.length + ")");
                 }
 
                 // add the transition
@@ -73,6 +77,14 @@ function nfa2dfa(nfa, alphabet) {
             }
         }
     }
+
+    // assign new names for the states
+    var id = 0;
+    for (var state of dfa) {
+        state.name = id++;
+    }
+
+    return dfa;
 }
 
 function potStateName(stateSet) {
@@ -92,7 +104,7 @@ function epsClosure(state) {
     // add the eps-closure of every e-connected state
     var epsConnected = state.nextStates(EPS);
     for (var i = 0; i < epsConnected.length; i++) {
-        if (!closure.isElem(epsConnected[i])) {
+        if (!closure.has(epsConnected[i])) {
             var nextClosure = epsClosure(epsConnected[i]);
 
             for (var epsState of nextClosure[0]) {
@@ -223,7 +235,7 @@ function State(name, isStart, isFinal) {
 
     this.nextStates = function(symb) {
         if (symb in this.transitions) {
-            return this.transitions;
+            return this.transitions[symb];
         } else {
             return [];
         }
@@ -259,10 +271,10 @@ function RegexParser(regex) {
     this.input = regex.replace(/\s/g, ""); // remove all whitespace
 
     // compute the alphabet used by this regex
-    this.alphabet = [];
+    this.alphabet = new Set();
     for (var i=0; i<this.input.length; i++) {
         if (validSymbol(this.input[i])) {
-            this.alphabet.push(this.input[i]);
+            this.alphabet.add(this.input[i]);
         }
     }
 
