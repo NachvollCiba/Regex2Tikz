@@ -1,0 +1,47 @@
+body {
+    text-align: center;
+    width: 600px;
+    margin:auto;
+}
+
+.group{
+    margin: 5px;
+    padding: 3px;
+    border: solid 1px cadetblue;
+}
+
+.left {
+    text-align: left;
+}
+
+.linked:hover {
+    cursor: pointer;
+    color: brown;
+}
+
+.stateCanvas {
+    border: solid 1px black;
+}
+
+#input {
+    margin-top:30px;
+}
+
+#inputInner {
+    width : 60%;
+    margin: auto;
+}
+
+#inputPrompt {
+    text-align: center;
+}
+
+.inputElement {
+    width: 90%;
+    margin-bottom: 3px;
+    padding: 4px;
+}
+
+#optionShowHide {
+    text-align:left;
+}

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Regex to Tikz</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
@@ -12,61 +14,16 @@
             try {
                 var parser = new RegexParser(regex);
                 var nfa = parser.parse();
-
-                var tikz = convertToTikz(nfa);
+                var dfa = nfa2dfa(nfa, parser.alphabet);
 
                 $("#result").show();
+
+                fillResult($("#innerNFA"), nfa);
+                fillResult($("#innerDFA"), dfa);
 
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
-
-                $("#resultTikzNFA").val(tikz);
-                $("#resultImgNFA").attr("src", "loading.gif");
-
-                var canvas = document.getElementById("drawCanvasNFA");
-                drawAutomaton(nfa, canvas);
-
-                $.ajax({
-                    url: encodeURI("render.php"),
-                    type: "POST",
-                    data: "tikz=" + tikz,
-                    success: function (data) {
-                        var img = "data:image/png;base64," + data;
-                        $("#resultImgNFA").attr("src", img);
-                        $("#resultTikzNFA").append(img);
-                    },
-                    error: function (xhr, textStatus) {
-                        $("#resultImgNFA").attr("src", "");
-                        alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
-                    }
-                });
-
-                var dfa = nfa2dfa(nfa, parser.alphabet);
-                tikz = convertToTikz(dfa);
-
-                $("#resultTikzDFA").val(tikz);
-                $("#resultImgDFA").attr("src", "loading.gif");
-
-                canvas = document.getElementById("drawCanvasDFA");
-                drawAutomaton(dfa, canvas);
-
-                $.ajax({
-                    url: encodeURI("render.php"),
-                    type: "POST",
-                    data: "tikz=" + tikz,
-                    success: function (data) {
-                        var img = "data:image/png;base64," + data;
-                        $("#resultImgDFA").attr("src", img);
-                        $("#resultTikzDFA").append(img);
-                    },
-                    error: function (xhr, textStatus) {
-                        $("#resultImgDFA").attr("src", "");
-                        alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
-                    }
-                });
-
-
             } catch (e) {
                 console.log(e.stack);
             }
@@ -120,31 +77,91 @@
 
             }
         }
+
+        function revealElem(elem, anchor, showText, hideText) {
+            if (elem.is(":visible")) {
+                elem.hide();
+                anchor.text(showText);
+            } else {
+                elem.show();
+                anchor.text(hideText);
+            }
+        }
+
+        function fillResult(elem, automaton) {
+            if (elem.children().length === 0) { // create all the elements
+                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
+                var tikzDispl = $("<textarea></textarea>").attr("rows", "20").attr("cols", "50").attr("disabled", "true");
+                var renderImg = $("<img/>").attr("src", "");
+                var renderButton = $("<input>").attr("type", "button").val("Render in LATEX")
+                        .click(function () { fetchLatexRenderedPng(renderImg, tikzDispl.val()) });
+
+                elem.append(canvas);
+                elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
+                elem.append(renderButton);
+                elem.append(renderImg);
+            } else { // find all the (existing) elements
+                canvas = elem.find("canvas");
+                tikzDispl = elem.find("textarea");
+                renderImg = elem.find("img");
+            }
+            canvas = canvas[0];
+
+            // populate the element contents
+            tikzDispl.val(convertToTikz(automaton));
+            drawAutomaton(automaton, canvas);
+        }
+
+        function fetchLatexRenderedPng(imgElem, tikz) {
+            imgElem.attr("src", "loading.gif");
+            $.ajax({
+                url: encodeURI("render.php"),
+                type: "POST",
+                data: "tikz=" + tikz,
+                success: function (data) {
+                    var img = "data:image/png;base64," + data;
+                    imgElem.attr("src", img);
+                },
+                error: function (xhr, textStatus) {
+                    imgElem.attr("src", ""); // TODO some sort of error img or something
+                    alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                }
+            });
+        }
     </script>
 </head>
-<body style="text-align: center">
-<h2>Insert a regular expression</h2>
-<input type="text" id="regex" placeholder="e.g. (a|b)*c" autofocus="true">
-<input type="button" value="Generate Automaton" onclick="submit()">
+<body>
+<h1>Regex2Tikz</h1>
+<em>A simple tool for converting a regular expression into TIKZ code for its corresponding automatons.</em>
+<p>
+<div class="group" id="input">
+    <div id="inputInner">
+        <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div><br>
+        <input type="text" id="regex" placeholder="e.g. (a|b)*c" autofocus class="inputElement"><br>
+        <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
+    </div>
+</div>
+</p>
+
+<span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
+<div hidden id="options" class="group"></div>
+
+<hr>
 
 <div hidden id="result">
+    <div class="group" id="nfaDiv">
+        <h2 id="nfaHeader" class="linked"
+            onclick="revealElem($('#innerNFA'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
+            Resulting NFA &#x25BC;</h2>
+        <div hidden id="innerNFA"></div></div>
+
+    <div class="group" id="dfaDiv">
+        <h2 id="dfaHeader", class="linked"
+            onclick="revealElem($('#innerDFA'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
+            Non-minimal powerset DFA &#x25BC;</h2>
+        <div hidden id="innerDFA"></div></div>
+
     <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
-    <h2>Resulting NFA</h2>
-    <h3>TIKZ Code</h3>
-    <textarea rows="20" cols="50" id="resultTikzNFA" disabled></textarea><br>
-    <canvas id="drawCanvasNFA" width="500" height="500"></canvas>
-
-    <h3>LATEX-Rendered</h3>
-    <img src="" id="resultImgNFA"/>
-
-    <h2>Non-minimal powerset DFA</h2>
-    <h3>TIKZ Code</h3>
-    <textarea rows="20" cols="50" id="resultTikzDFA" disabled></textarea><br>
-    <canvas id="drawCanvasDFA" width="500" height="500"></canvas>
-
-    <h3>LATEX-Rendered</h3>
-    <img src="" id="resultImgDFA"/>
 </div>
-
 </body>
 </html>
