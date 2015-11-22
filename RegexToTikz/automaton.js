@@ -96,8 +96,10 @@ function potStateName(stateSet) {
     return stateNames.sort();
 }
 
-function epsClosure(state) {
-    var closure = new Set();
+function epsClosure(state, closure) {
+    if (typeof(closure) === 'undefined') {
+        closure = new Set();
+    }
     var hasFinal = state.isFinal;
 
     closure.add(state); // every state is trivially part of its own eps-closure
@@ -106,7 +108,7 @@ function epsClosure(state) {
     var epsConnected = state.nextStates(EPS);
     for (var i = 0; i < epsConnected.length; i++) {
         if (!closure.has(epsConnected[i])) {
-            var nextClosure = epsClosure(epsConnected[i]);
+            var nextClosure = epsClosure(epsConnected[i], closure);
 
             for (var epsState of nextClosure[0]) {
                 closure.add(epsState);
