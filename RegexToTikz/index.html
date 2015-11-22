@@ -15,11 +15,13 @@
                 var parser = new RegexParser(regex);
                 var nfa = parser.parse();
                 var dfa = nfa2dfa(nfa, parser.alphabet);
+                var minDFA = minimize(dfa);
 
                 $("#result").show();
 
                 fillResult($("#innerNFA"), nfa);
                 fillResult($("#innerDFA"), dfa);
+                fillResult($("#innerMinDFA"), minDFA);
 
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
@@ -34,7 +36,7 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            var zoom = 40;
+            var zoom = 20;
 
             const offsetX = canvas.width / 2;
             const offsetY = canvas.height / 2;
@@ -91,14 +93,14 @@
         function fillResult(elem, automaton) {
             if (elem.children().length === 0) { // create all the elements
                 var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
-                var tikzDispl = $("<textarea></textarea>").attr("rows", "20").attr("cols", "50").attr("disabled", "true");
+                var tikzDispl = $("<textarea></textarea>").attr("rows", "20").attr("cols", "50");//.attr("disabled", "true");
                 var renderImg = $("<img/>").attr("src", "");
                 var renderButton = $("<input>").attr("type", "button").val("Render in LATEX")
                         .click(function () { fetchLatexRenderedPng(renderImg, tikzDispl.val()) });
 
                 elem.append(canvas);
                 elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
-                elem.append(renderButton);
+                elem.append(renderButton).append($("<br>"));
                 elem.append(renderImg);
             } else { // find all the (existing) elements
                 canvas = elem.find("canvas");
@@ -118,9 +120,9 @@
                 url: encodeURI("render.php"),
                 type: "POST",
                 data: "tikz=" + tikz,
-                success: function (data) {
-                    var img = "data:image/png;base64," + data;
-                    imgElem.attr("src", img);
+                mimeType: "text/plain; charset=x-user-defined",
+                success: function (imgURL) {
+                    imgElem.attr("src", imgURL);
                 },
                 error: function (xhr, textStatus) {
                     imgElem.attr("src", ""); // TODO some sort of error img or something
@@ -144,7 +146,10 @@
 </p>
 
 <span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
-<div hidden id="options" class="group"></div>
+
+<div hidden id="options" class="group">
+    Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon"><br>
+</div>
 
 <hr>
 
@@ -156,10 +161,18 @@
         <div hidden id="innerNFA"></div></div>
 
     <div class="group" id="dfaDiv">
-        <h2 id="dfaHeader", class="linked"
+        <h2 id="dfaHeader" class="linked"
             onclick="revealElem($('#innerDFA'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
             Non-minimal powerset DFA &#x25BC;</h2>
         <div hidden id="innerDFA"></div></div>
+
+    <div class="group" id="minDFADiv">
+        <h2 id="minDFAHeader" class="linked"
+            onclick="revealElem($('#innerMinDFA'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
+            Minimized DFA &#x25BC;</h2>
+
+        <div hidden id="innerMinDFA"></div>
+    </div>
 
     <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
 </div>

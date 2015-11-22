@@ -19,7 +19,7 @@ function quicklatex_encode($string) {
     return $string;
 }
 
-function get_quicklatex_svg($tikz) {
+function get_quicklatex_img_url($tikz) {
 
     $service_url = "http://www.quicklatex.com/latex3.f";
 
@@ -69,39 +69,23 @@ function get_quicklatex_svg($tikz) {
 //            $error_msg = $regs[6];
 
 
-            if ($status == 0) // Everything is all right!
-            {
-                $ch = curl_init($image_url);
-                curl_setopt($ch, CURLOPT_HEADER, 0);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
-                $raw = curl_exec($ch);
-                curl_close($ch);
-
-                $file = fopen("request.png", "w");
-                fwrite($file, $raw);
-                fclose($file);
-
-                $debug = fopen("debug.txt", "w");
-                fwrite($debug, "Body:" . PHP_EOL);
-                fwrite($debug, $body);
-                fwrite($debug, PHP_EOL . PHP_EOL . "URL:" . PHP_EOL);
-                fwrite($debug, $image_url);
-                fclose($debug);
-
-                return $raw;
+            if ($status == 0) { // no errors
+                return $image_url;
+            } else {
+                return "error.png";
             }
 
         } else {
-
+            return "error.png";
         }
     }
 }
 
-$resp = get_quicklatex_svg($_POST["tikz"]);
-echo base64_encode($resp);
+// return the url of the rendered latex image
+echo get_quicklatex_img_url($_POST["tikz"]);
 
 
+// test function
 function test() {
     $tikz = "\\usetikzlibrary{automata, positioning}
 \\begin{tikzpicture}
@@ -120,7 +104,7 @@ function test() {
 (4) edge node [above] {\$c\$} (5)
 ;
 \\end{tikzpicture}";
-    echo get_quicklatex_svg($tikz);
+    echo get_quicklatex_img_url($tikz);
 }
 
 //test();

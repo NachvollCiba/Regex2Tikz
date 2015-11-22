@@ -1,4 +1,4 @@
- /**
+/**
  * Created by dennis on 25/10/15.
  */
 
@@ -34,9 +34,10 @@ function nfa2dfa(nfa, alphabet) {
             for (var curState of next[0]) {
                 isFinal |= curState.isFinal;
 
-                for (var nextState of curState.nextStates(symb)) {
+
+                curState.nextStates(symb).forEach(function (nextState) {
                     symbConnected.add(nextState);
-                }
+                });
             }
 
             // build the eps closure of the set
@@ -80,18 +81,18 @@ function nfa2dfa(nfa, alphabet) {
 
     // assign new names for the states
     var id = 0;
-    for (var state of dfa) {
+    dfa.forEach(function (state) {
         state.name = id++;
-    }
+    });
 
     return dfa;
 }
 
 function potStateName(stateSet) {
     var stateNames = [];
-    for (var  state of stateSet) {
+    stateSet.forEach(function (state) {
         stateNames.push(state.name);
-    }
+    });
     return stateNames.sort();
 }
 
@@ -118,7 +119,79 @@ function epsClosure(state) {
 }
 
 function minimize(dfa) {
-    // TODO implement
+    // initialize map of equivalent states
+    var eqStatesMap = new Map();
+    dfa.forEach(function (state) {
+        var eqStatesSet = new Set();
+
+        dfa.forEach(function (otherState) {
+            if (otherState.isFinal == state.isFinal) {
+                eqStatesSet.add(otherState);
+                console.log("Initialized " + state.name + " and " + otherState.name + " as equivalent");
+            }
+        });
+
+        eqStatesMap.set(state, eqStatesSet);
+    });
+
+    var changed = true;
+    while (changed) {
+        changed = false;
+
+        dfa.forEach(function (state) {
+            var eqStates = eqStatesMap.get(state);
+            eqStates.forEach(function (eqState) {
+                console.log("Testing " + state.name + " and " + eqState.name + ".");
+                for (var symb in state.transitions) {
+                    // input is a dfa -> list of next states is always of length <= 1
+                    var next = state.nextStates(symb);
+                    var eqNext = eqState.nextStates(symb);
+                    if (eqNext.length > 0) {
+                        console.log("--" + symb + " goes to " + next[0].name + "(" + state.name + ") and " + eqNext[0].name + "(" + eqState.name + ")");
+                        next = next[0];
+                        eqNext = eqNext[0];
+
+                        if (!eqStatesMap.get(next).has(eqNext)) {
+                            console.log(state.name + " and " + eqState.name + " are not equivalent");
+                            eqStates.delete(eqState);
+                            eqStatesMap.get(eqState).delete(state);
+                            changed = true;
+                        }
+                    } else {
+                        console.log(state.name + " and " + eqState.name + " are not equivalent");
+                        eqStates.delete(eqState);
+                        eqStatesMap.get(eqState).delete(state);
+                        changed = true;
+                    }
+                }
+            });
+        });
+    }
+
+    // create new states
+    var newStatesMap = new Map();
+    for (var entry of eqStatesMap.entries()) {
+        console.log("State " + entry[0].name + " is eq. to " + potStateName(entry[1]));
+        newStatesMap.set(entry[0], new State(potStateName(entry[1], entry[0].isStart, entry[0].isFinal)));
+    }
+
+    // create transitions and build dfa
+    var minDFA = [];
+    for (entry of newStatesMap.entries()) {
+        // add all transitions
+        for (var symb in entry[0].transitions) {
+            entry[1].addNextState(symb, newStatesMap.get(entry[0].nextStates(symb)[0]));
+        }
+
+        // add to the dfa array (at the beginning, if the state is a start state)
+        if (entry[1].isStart) {
+            minDFA.unshift(entry[1]);
+        } else {
+            minDFA.push(entry[1]);
+        }
+    }
+
+    return minDFA;
 }
 
 function layoutAut(states) {
