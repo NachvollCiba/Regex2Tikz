@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d3374568-7800-46c9-a96c-730c9f20341d" name="Default" comment="Transition labels are now drawn on the canvas rendering of the automaton">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/error.png" />
+    <list default="true" id="d3374568-7800-46c9-a96c-730c9f20341d" name="Default" comment="Fixed an issue where the epsilon closure computation did not terminate">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/automaton.js" afterPath="$PROJECT_DIR$/automaton.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/index.html" afterPath="$PROJECT_DIR$/index.html" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/render.php" afterPath="$PROJECT_DIR$/render.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tikzCreation.js" afterPath="$PROJECT_DIR$/tikzCreation.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="RegexToTikz.iws" />
@@ -47,7 +42,7 @@
               <caret line="26" column="14" selection-start-line="26" selection-start-column="14" selection-end-line="26" selection-end-column="14" />
               <folding>
                 <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-                <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+                <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
               </folding>
             </state>
           </provider>
@@ -56,8 +51,8 @@
       <file leaf-file-name="automaton.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/automaton.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-0.23519737">
-              <caret line="125" column="16" selection-start-line="125" selection-start-column="16" selection-end-line="125" selection-end-column="16" />
+            <state vertical-scroll-proportion="0.50986844">
+              <caret line="189" column="60" selection-start-line="189" selection-start-column="60" selection-end-line="189" selection-end-column="60" />
               <folding />
             </state>
           </provider>
@@ -70,6 +65,7 @@
               <caret line="78" column="31" selection-start-line="78" selection-start-column="31" selection-end-line="78" selection-end-column="31" />
               <folding>
                 <element signature="e#6#86#0#PHP" expanded="true" />
+                <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
               </folding>
             </state>
           </provider>
@@ -317,28 +313,40 @@
       <option name="project" value="LOCAL" />
       <updated>1447763907180</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Fixed Bugs: LaTeX-rendered images are now displayed properly">
+      <created>1448234032868</created>
+      <option name="number" value="00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1448234032869</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Fixed an issue where the epsilon closure computation did not terminate">
+      <created>1448234509877</created>
+      <option name="number" value="00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1448234509877</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="27" width="1366" height="741" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18154982" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3291536" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="PHP-CGI Server" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3291536" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3291536" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.14733543" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18154982" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.61755484" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3291536" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -363,13 +371,15 @@
     <MESSAGE value="Tikz code is now rendered using QuickLatex (quicklatex.com)" />
     <MESSAGE value="Rewrote the Regex Parser" />
     <MESSAGE value="Transition labels are now drawn on the canvas rendering of the automaton" />
-    <option name="LAST_COMMIT_MESSAGE" value="Transition labels are now drawn on the canvas rendering of the automaton" />
+    <MESSAGE value="Fixed Bugs: LaTeX-rendered images are now displayed properly" />
+    <MESSAGE value="Fixed an issue where the epsilon closure computation did not terminate" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed an issue where the epsilon closure computation did not terminate" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <option name="time" value="26" />
+      <option name="time" value="28" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -380,7 +390,7 @@
           <caret line="36" column="83" selection-start-line="36" selection-start-column="83" selection-end-line="36" selection-end-column="83" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -407,6 +417,7 @@
           <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -425,7 +436,7 @@
           <caret line="36" column="83" selection-start-line="36" selection-start-column="83" selection-end-line="36" selection-end-column="83" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -452,6 +463,7 @@
           <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -470,7 +482,7 @@
           <caret line="36" column="83" selection-start-line="36" selection-start-column="83" selection-end-line="36" selection-end-column="83" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -497,6 +509,7 @@
           <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -515,7 +528,7 @@
           <caret line="36" column="83" selection-start-line="36" selection-start-column="83" selection-end-line="36" selection-end-column="83" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -534,6 +547,7 @@
           <caret line="103" column="10" selection-start-line="103" selection-start-column="10" selection-end-line="103" selection-end-column="10" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -552,7 +566,7 @@
           <caret line="35" column="1" selection-start-line="35" selection-start-column="1" selection-end-line="35" selection-end-column="1" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -571,6 +585,7 @@
           <caret line="51" column="12" selection-start-line="51" selection-start-column="12" selection-end-line="57" selection-end-column="24" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -596,7 +611,7 @@
           <caret line="35" column="1" selection-start-line="35" selection-start-column="1" selection-end-line="35" selection-end-column="1" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -630,7 +645,7 @@
           <caret line="35" column="1" selection-start-line="35" selection-start-column="1" selection-end-line="35" selection-end-column="1" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -657,7 +672,7 @@
           <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -684,7 +699,7 @@
           <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -711,7 +726,7 @@
           <caret line="41" column="23" selection-start-line="41" selection-start-column="23" selection-end-line="41" selection-end-column="23" />
           <folding>
             <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
@@ -770,31 +785,32 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tikzCreation.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="26" column="14" selection-start-line="26" selection-start-column="14" selection-end-line="26" selection-end-column="14" />
-          <folding>
-            <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
-            <marker date="1447938023802" expanded="true" signature="745:927" placeholder="{...}" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/render.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-11.833333">
           <caret line="78" column="31" selection-start-line="78" selection-start-column="31" selection-end-line="78" selection-end-column="31" />
           <folding>
             <element signature="e#6#86#0#PHP" expanded="true" />
+            <marker date="1448232832624" expanded="true" signature="1909:1970" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tikzCreation.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="26" column="14" selection-start-line="26" selection-start-column="14" selection-end-line="26" selection-end-column="14" />
+          <folding>
+            <element signature="n#!!doc;n#convertToTikz#0" expanded="false" />
+            <marker date="1448232832600" expanded="true" signature="748:930" placeholder="{...}" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/automaton.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-0.23519737">
-          <caret line="125" column="16" selection-start-line="125" selection-start-column="16" selection-end-line="125" selection-end-column="16" />
+        <state vertical-scroll-proportion="0.50986844">
+          <caret line="189" column="60" selection-start-line="189" selection-start-column="60" selection-end-line="189" selection-end-column="60" />
           <folding />
         </state>
       </provider>

@@ -93,7 +93,12 @@ function potStateName(stateSet) {
     stateSet.forEach(function (state) {
         stateNames.push(state.name);
     });
-    return stateNames.sort();
+
+    var res = "";
+    stateNames.sort().forEach(function (str) {
+        res += str;
+    });
+    return res;
 }
 
 function epsClosure(state, closure) {
@@ -171,25 +176,43 @@ function minimize(dfa) {
     }
 
     // create new states
-    var newStatesMap = new Map();
+    var newStatesMap = new Map(); // old state => new state
+    var newStates = new Map(); //  new state name => new state
     for (var entry of eqStatesMap.entries()) {
-        console.log("State " + entry[0].name + " is eq. to " + potStateName(entry[1]));
-        newStatesMap.set(entry[0], new State(potStateName(entry[1], entry[0].isStart, entry[0].isFinal)));
+        var stateName = potStateName(entry[1]);
+        console.log("State " + entry[0].name + " is eq. to [" + stateName + "]");
+        if (typeof(newStates.get(stateName)) == "undefined") {
+            var isStart = false;
+            var isFinal = false;
+            entry[1].forEach(function (eqState) {
+                isStart |= eqState.isStart;
+                isFinal |= eqState.isFinal;
+            });
+
+            newState = new State(stateName, isStart, isFinal);
+            newStates.set(stateName, newState);
+        } else {
+            var newState = newStates.get(stateName);
+        }
+
+        newStatesMap.set(entry[0], newState);
     }
 
-    // create transitions and build dfa
+    // add transitions to the new states
     var minDFA = [];
     for (entry of newStatesMap.entries()) {
         // add all transitions
         for (var symb in entry[0].transitions) {
             entry[1].addNextState(symb, newStatesMap.get(entry[0].nextStates(symb)[0]));
         }
+    }
 
-        // add to the dfa array (at the beginning, if the state is a start state)
-        if (entry[1].isStart) {
-            minDFA.unshift(entry[1]);
+    // assemble the new states to an dfa array
+    for (var state of newStates.values()) {
+        if (state.isStart) {
+            minDFA.unshift(state);
         } else {
-            minDFA.push(entry[1]);
+            minDFA.push(state);
         }
     }
 
