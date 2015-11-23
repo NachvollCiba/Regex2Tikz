@@ -219,86 +219,6 @@ function minimize(dfa) {
     return minDFA;
 }
 
-function layoutAut(states) {
-    const NODE_CHARGE = .1;
-    const ITER_THRESHOLD = 100;
-    const EDGE_CONST = .1;
-
-    //// initialize all states position
-    //var frak = 2 * Math.PI / states.length;
-    //var r = states.length / (2 * Math.PI);
-    //for (var j=0; j<states.length; j++) {
-    //    states[j].position[0] = r * Math.cos(j * frak);
-    //    states[j].position[1] = r * Math.sin(j * frak);
-    //}
-
-    for (var i = 0; i < ITER_THRESHOLD; i++) {
-        var totalDelta = 0;
-        var deltaE = 0;
-        var deltaD = 0;
-
-        // initialize movDeltas
-        var movDeltas = [];
-        for (var x = 0; x < states.length; x++) {
-            movDeltas[x] = [0, 0];
-        }
-
-        for (x = 0; x < states.length; x++) {
-            // collect all connected states
-            var conStates = listOfConnectedStates(states[x]);
-            var movDelta = [0, 0];
-
-            // calculate repulsive force for every other state
-            for (var y = x + 1; y < states.length; y++) {
-                var dist = euclideanDistance(states[x].position, states[y].position);
-                var val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
-                var unit = unitVector(vecDifference(states[x].position, states[y].position));
-
-                movDelta[0] += val * unit[0];
-                movDelta[1] += val * unit[1];
-                deltaE += val;
-
-                if (states[y].name in conStates) {
-                    val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
-
-                    movDelta[0] += val * unit[0];
-                    movDelta[1] += val * unit[1];
-                    deltaD = val;
-                }
-
-                movDeltas[x][0] += movDelta[0];
-                movDeltas[x][1] += movDelta[1];
-
-                movDeltas[y][0] -= movDelta[0];
-                movDeltas[y][1] -= movDelta[1];
-
-                totalDelta += euclideanDistance([0, 0], movDelta);
-                movDelta = [0, 0];
-            }
-        }
-
-        // apply translations
-        for (x = 0; x < states.length; x++) {
-            states[x].position[0] += movDeltas[x][0];
-            states[x].position[1] += movDeltas[x][1];
-        }
-    }
-}
-
-function unitVector(vec) {
-    var distance = euclideanDistance([0, 0], vec);
-    return [vec[0] / distance, vec[1] / distance];
-
-}
-
-function euclideanDistance(vec1, vec2) {
-    return Math.sqrt(Math.pow(vec1[0] - vec2[0], 2) +
-        Math.pow(vec1[1] - vec2[1], 2));
-}
-
-function vecDifference(vec1, vec2) {
-    return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
-}
 
 function listOfConnectedStates(state) {
     var conStates = [];
@@ -329,9 +249,9 @@ function State(name, isStart, isFinal) {
 
     this.transitions = Object.create(null);
 
-    this.position = [Math.random(), Math.random()]; // used for graph drawing
+    this.position = this.isStart ? [-1, Math.random()] : [Math.random(), Math.random()]; // used for graph drawing
 
-    this.nextStates = function(symb) {
+    this.nextStates = function (symb) { // returns the list of states following after the symbol
         if (symb in this.transitions) {
             return this.transitions[symb];
         } else {
@@ -339,12 +259,22 @@ function State(name, isStart, isFinal) {
         }
     };
 
-    this.addNextState = function(symb, nextState) {
+    this.addNextState = function (symb, nextState) { // adds a transition under symb to nextState
         if (! (symb in this.transitions)) {
             this.transitions[symb] = [];
         }
 
         this.transitions[symb].push(nextState);
+    };
+
+    this.hasTransitionTo = function (otherState) {
+        for (symb in this.transitions) {
+            if (this.transitions[symb].indexOf(otherState) > -1) {
+                return true;
+            }
+        }
+
+        return false;
     };
 
     this.merge = function(state) {
