@@ -8,6 +8,7 @@ function convertToTikz(nfa) {
 
     layoutAut(nfa);
 
+    // sort the states by name
     var sortedNFA = nfa.sort(function (item1, item2) {
         return item1.name - item2.name;
     });
@@ -38,6 +39,12 @@ function generateStateCode(state) {
 }
 
 function generateTransitionsCode(state) {
+    //var vecs= [ [1,0], [1,-1], [0,-1], [-1,-1], [-1,0], [-1,1], [0,1], [1,1] ];
+    //for (var i = 0; i < vecs.length; i++) {
+    //    //console.log(vecLen(vecs[i]) + " " + dot([0,1], vecs[i]));
+    //    console.log(vecs[i] + " " + angle([0,1], vecs[i]));
+    //}
+
     var fromName = toInternalID(state.name);
 
     // build a map: state => symbols for transitions to that state
@@ -61,28 +68,84 @@ function generateTransitionsCode(state) {
     var result = "(" + fromName + ")";
     const emptyWord = $("#emptySymb").val();
 
+    var freeDirs = ["right", "left", "below", "above"];
+
     for (var entry of stateSymbolMap.entries()) {
         var toName = toInternalID(entry[0].name);
+
+        // first, create all non-looping transitions
         if (toName != fromName) {
+
+            // figure out in what direction the edge goes
+            var pos = vecDifference(entry[0].position, state.position);
+            var edgeAngle = angle([0, 1], pos);
+            if (pos[0] > 0) { // right side
+                if (edgeAngle < Math.PI / 4) {
+                    dir = "above";
+                } else if (edgeAngle > 3 * Math.PI / 4) {
+                    dir = "below";
+                } else {
+                    dir = "right";
+                }
+            } else { // left side
+                if (edgeAngle < Math.PI / 4) {
+                    dir = "above";
+                } else if (edgeAngle > 3 * Math.PI / 4) {
+                    dir = "below";
+                } else {
+                    dir = "left";
+                }
+            }
+
+            // mark the direction as occupied
+            i = freeDirs.indexOf(dir);
+            if (i >= 0) { // remove the direction of the outgoing transition
+                freeDirs.splice(i, 1);
+            }
+
+            // where to write the node label?
+            var nodeDir;
+            if (dir == "above") {
+                nodeDir = "left";
+            } else if (dir == "below") {
+                nodeDir = "right";
+            } else if (dir == "left") {
+                nodeDir = "below";
+            } else if (dir == "right") {
+                nodeDir = "above";
+            }
+
             if (entry[0].hasTransitionTo(state)) {
                 //var dir = entry[0].name < state.name? "left" : "right";
-                result += "\tedge [bend right = 30] node [above] {\$";
+                result += "\tedge [bend right = 30] node [" + nodeDir + "] {\$";
             } else {
-                result += "\tedge node [above] {\$";
+                result += "\tedge node [" + nodeDir + "] {\$";
             }
-        } else {
-            result += "\tedge [loop above] node [above] {\$";
-            toName = "";
+
+            var first = true;
+
+            for (var symb of entry[1]) {
+                symb = symb === EPS ? emptyWord : symb;
+                result += first ? symb : ", " + symb;
+                first = false;
+            }
+            result += "\$} (" + toName + ")\n";
         }
+    }
 
-        var first = true;
+    // add looping transitions wherever there is space for it
+    if (stateSymbolMap.has(state)) {
+        var dir = freeDirs.length > 0 ? freeDirs.pop() : "left";
+        result += "\tedge [loop " + dir + "] node [" + dir + "] {\$";
 
-        for (var symb of entry[1]) {
-            symb = symb === EPS ? emptyWord : symb;
+        first = true;
+        for (var symb of stateSymbolMap.get(state)) {
+            symb = symb === EPS ? empty : symb;
             result += first ? symb : ", " + symb;
             first = false;
         }
-        result += "\$} (" + toName + ")\n";
+
+        result += "\$} ()\n";
     }
 
     return result + "\n";
@@ -98,13 +161,8 @@ function layoutAut(states) {
     const ITER_THRESHOLD = 100;
     const EDGE_CONST = .1;
 
-    //// initialize all states position
-    //var frak = 2 * Math.PI / states.length;
-    //var r = states.length / (2 * Math.PI);
-    //for (var j=0; j<states.length; j++) {
-    //    states[j].position[0] = r * Math.cos(j * frak);
-    //    states[j].position[1] = r * Math.sin(j * frak);
-    //}
+    // put the start state to the left
+    states[0].position[0] = -2 * states.length;
 
     for (var i = 0; i < ITER_THRESHOLD; i++) {
         var totalDelta = 0;
@@ -160,7 +218,7 @@ function layoutAut(states) {
 }
 
 function unitVector(vec) {
-    var distance = euclideanDistance([0, 0], vec);
+    var distance = vecLen(vec);
     return [vec[0] / distance, vec[1] / distance];
 
 }
@@ -170,6 +228,18 @@ function euclideanDistance(vec1, vec2) {
         Math.pow(vec1[1] - vec2[1], 2));
 }
 
+function vecLen(vec) {
+    return euclideanDistance([0, 0], vec);
+}
+
 function vecDifference(vec1, vec2) {
     return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
+}
+
+function dot(vec1, vec2) {
+    return vec1[0] * vec2[0] + vec1[1] * vec2[1];
+}
+
+function angle(vec1, vec2) {
+    return Math.acos(dot(vec1, vec2) / (vecLen(vec1) * vecLen(vec2)));
 }

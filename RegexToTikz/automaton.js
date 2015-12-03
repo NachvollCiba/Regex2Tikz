@@ -154,7 +154,6 @@ function minimize(dfa) {
                     var next = state.nextStates(symb);
                     var eqNext = eqState.nextStates(symb);
                     if (eqNext.length > 0) {
-                        console.log("--" + symb + " goes to " + next[0].name + "(" + state.name + ") and " + eqNext[0].name + "(" + eqState.name + ")");
                         next = next[0];
                         eqNext = eqNext[0];
 
@@ -216,6 +215,12 @@ function minimize(dfa) {
         }
     }
 
+    // rename the states
+    var id = 0;
+    minDFA.forEach(function (state) {
+        state.name = id++;
+    });
+
     return minDFA;
 }
 
@@ -249,7 +254,7 @@ function State(name, isStart, isFinal) {
 
     this.transitions = Object.create(null);
 
-    this.position = this.isStart ? [-1, Math.random()] : [Math.random(), Math.random()]; // used for graph drawing
+    this.position = [Math.random(), Math.random()]; // used for graph drawing
 
     this.nextStates = function (symb) { // returns the list of states following after the symbol
         if (symb in this.transitions) {

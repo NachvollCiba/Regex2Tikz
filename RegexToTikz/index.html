@@ -13,14 +13,20 @@
             var regex = $("#regex").val();
             try {
                 var parser = new RegexParser(regex);
+                console.log("Compiling regular expression to nfa");
                 var nfa = parser.parse();
+                console.log("Creating DFA");
                 var dfa = nfa2dfa(nfa, parser.alphabet);
+                console.log("Minimizing DFA");
                 var minDFA = minimize(dfa);
 
                 $("#result").show();
 
+                console.log("Creating HTML elements for the nfa");
                 fillResult($("#innerNFA"), nfa);
+                console.log("Creating HTML elements for the powerset dfa");
                 fillResult($("#innerDFA"), dfa);
+                console.log("Creating HTML elements for the minimal dfa");
                 fillResult($("#innerMinDFA"), minDFA);
 
                 var alpha = [];
@@ -92,26 +98,26 @@
 
         function fillResult(elem, automaton) {
             if (elem.children().length === 0) { // create all the elements
-                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
+//                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
                 var tikzDispl = $("<textarea></textarea>").attr("rows", "20").attr("cols", "50");//.attr("disabled", "true");
                 var renderImg = $("<img/>").attr("src", "");
                 var renderButton = $("<input>").attr("type", "button").val("Render in LaTeX")
                         .click(function () { fetchLatexRenderedPng(renderImg, tikzDispl.val()) });
 
-                elem.append(canvas);
+//                elem.append(canvas);
                 elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
                 elem.append(renderButton).append($("<br>"));
                 elem.append(renderImg);
             } else { // find all the (existing) elements
-                canvas = elem.find("canvas");
+//                canvas = elem.find("canvas");
                 tikzDispl = elem.find("textarea");
                 renderImg = elem.find("img");
             }
-            canvas = canvas[0];
+//            canvas = canvas[0];
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
-            drawAutomaton(automaton, canvas);
+//            drawAutomaton(automaton, canvas);
         }
 
         function fetchLatexRenderedPng(imgElem, tikz) {
@@ -152,7 +158,7 @@
 
 <span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
 
-<div hidden id="options" class="group">
+<div hidden id="options" class="group" style="text-align: left">
     Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"><br>
     <datalist id="emptyWordList">
         <option value="\varepsilon">&epsilon;</option>
@@ -160,6 +166,8 @@
         <option value="\lambda">&lambda;</option>
         <option value=" ">(Nothing)</option>
     </datalist>
+    <input type="checkbox" id="sinkGenerate"> Generate sink state<br>
+    State name prefix: <input type="text" id="statePrefix" value=""><br>
 </div>
 
 <hr>
