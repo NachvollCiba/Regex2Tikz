@@ -24,7 +24,6 @@ function nfa2dfa(nfa, alphabet) {
 
     while (stack.length > 0) {
         var next = stack.shift();
-        console.log("Getting state " + next[1] + " from the stack");
 
         for (var symb of alphabet) {
             var symbConnected = new Set();
@@ -58,7 +57,6 @@ function nfa2dfa(nfa, alphabet) {
 
             if (symbConnected.size > 0) {
                 var stateName = potStateName(symbConnected);
-                console.log("Can get from " + next[1] + " to " + stateName + " via " + symb);
 
                 // create the set state if it does not exist
                 var potState = null;
@@ -69,7 +67,6 @@ function nfa2dfa(nfa, alphabet) {
                     stack.push([symbConnected, stateName]);
                     potStates[stateName] = potState;
                     dfa.push(potState);
-                    console.log("Creating state " + stateName + " (" + stack.length + ")");
                 }
 
                 // add the transition
@@ -134,7 +131,6 @@ function minimize(dfa) {
         dfa.forEach(function (otherState) {
             if (otherState.isFinal == state.isFinal) {
                 eqStatesSet.add(otherState);
-                console.log("Initialized " + state.name + " and " + otherState.name + " as equivalent");
             }
         });
 
@@ -148,7 +144,6 @@ function minimize(dfa) {
         dfa.forEach(function (state) {
             var eqStates = eqStatesMap.get(state);
             eqStates.forEach(function (eqState) {
-                console.log("Testing " + state.name + " and " + eqState.name + ".");
                 for (var symb in state.transitions) {
                     // input is a dfa -> list of next states is always of length <= 1
                     var next = state.nextStates(symb);
@@ -158,13 +153,11 @@ function minimize(dfa) {
                         eqNext = eqNext[0];
 
                         if (!eqStatesMap.get(next).has(eqNext)) {
-                            console.log(state.name + " and " + eqState.name + " are not equivalent");
                             eqStates.delete(eqState);
                             eqStatesMap.get(eqState).delete(state);
                             changed = true;
                         }
                     } else {
-                        console.log(state.name + " and " + eqState.name + " are not equivalent");
                         eqStates.delete(eqState);
                         eqStatesMap.get(eqState).delete(state);
                         changed = true;
@@ -179,7 +172,6 @@ function minimize(dfa) {
     var newStates = new Map(); //  new state name => new state
     for (var entry of eqStatesMap.entries()) {
         var stateName = potStateName(entry[1]);
-        console.log("State " + entry[0].name + " is eq. to [" + stateName + "]");
         if (typeof(newStates.get(stateName)) == "undefined") {
             var isStart = false;
             var isFinal = false;
@@ -253,8 +245,6 @@ function State(name, isStart, isFinal) {
     this.isFinal = isFinal;
 
     this.transitions = Object.create(null);
-
-    this.position = [Math.random(), Math.random()]; // used for graph drawing
 
     this.nextStates = function (symb) { // returns the list of states following after the symbol
         if (symb in this.transitions) {

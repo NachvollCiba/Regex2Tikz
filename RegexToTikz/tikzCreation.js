@@ -6,13 +6,18 @@ function convertToTikz(nfa) {
     var tikz  = "\\usetikzlibrary{automata, positioning}\n";
     tikz += "\\begin{tikzpicture}\n";
 
+    // initialize additional state attributes
+    nfa.forEach(function (state) {
+        state.freeDirs = ["right", "below", "left", "above"];
+        state.position = [Math.random(), Math.random()];
+    });
+
     layoutAut(nfa);
 
     // sort the states by name
     var sortedNFA = nfa.sort(function (item1, item2) {
         return item1.name - item2.name;
     });
-
 
     // create a tikz node for each state
     for (var i = 0; i < sortedNFA.length; i++) {
@@ -68,8 +73,6 @@ function generateTransitionsCode(state) {
     var result = "(" + fromName + ")";
     const emptyWord = $("#emptySymb").val();
 
-    var freeDirs = ["right", "left", "below", "above"];
-
     for (var entry of stateSymbolMap.entries()) {
         var toName = toInternalID(entry[0].name);
 
@@ -79,39 +82,53 @@ function generateTransitionsCode(state) {
             // figure out in what direction the edge goes
             var pos = vecDifference(entry[0].position, state.position);
             var edgeAngle = angle([0, 1], pos);
+
+            var fromDir, toDir;
+
             if (pos[0] > 0) { // right side
                 if (edgeAngle < Math.PI / 4) {
-                    dir = "above";
+                    fromDir = "above";
+                    toDir = "below";
                 } else if (edgeAngle > 3 * Math.PI / 4) {
-                    dir = "below";
+                    fromDir = "below";
+                    toDir = "above";
                 } else {
-                    dir = "right";
+                    fromDir = "right";
+                    toDir = "left";
                 }
             } else { // left side
                 if (edgeAngle < Math.PI / 4) {
-                    dir = "above";
+                    fromDir = "above";
+                    toDir = "below";
                 } else if (edgeAngle > 3 * Math.PI / 4) {
-                    dir = "below";
+                    fromDir = "below";
+                    toDir = "above";
                 } else {
-                    dir = "left";
+                    fromDir = "left";
+                    toDir = "right";
                 }
             }
 
             // mark the direction as occupied
-            i = freeDirs.indexOf(dir);
+            i = state.freeDirs.indexOf(fromDir);
             if (i >= 0) { // remove the direction of the outgoing transition
-                freeDirs.splice(i, 1);
+                state.freeDirs.splice(i, 1);
+            }
+
+            i = entry[0].freeDirs.indexOf(toDir);
+            if (i >= 0) {
+                entry[0].freeDirs.splice(i, 1);
             }
 
             // where to write the node label?
             var nodeDir;
-            if (dir == "above") {
+            if (fromDir == "above") {
                 nodeDir = "left";
-            } else if (dir == "below") {
+            } else if (fromDir == "below") {
                 nodeDir = "right";
-            } else if (dir == "left") {
+            } else if (fromDir == "left") {
                 nodeDir = "below";
-            } else if (dir == "right") {
+            } else if (fromDir == "right") {
                 nodeDir = "above";
             }
 
@@ -135,7 +152,7 @@ function generateTransitionsCode(state) {
 
     // add looping transitions wherever there is space for it
     if (stateSymbolMap.has(state)) {
-        var dir = freeDirs.length > 0 ? freeDirs.pop() : "left";
+        var dir = state.freeDirs.length > 0 ? state.freeDirs.pop() : "left";
         result += "\tedge [loop " + dir + "] node [" + dir + "] {\$";
 
         first = true;

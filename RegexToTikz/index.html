@@ -96,42 +96,60 @@
             }
         }
 
+        var counter = 0;
         function fillResult(elem, automaton) {
             if (elem.children().length === 0) { // create all the elements
 //                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
-                var tikzDispl = $("<textarea></textarea>").attr("rows", "20").attr("cols", "50");//.attr("disabled", "true");
-                var renderImg = $("<img/>").attr("src", "");
-                var renderButton = $("<input>").attr("type", "button").val("Render in LaTeX")
-                        .click(function () { fetchLatexRenderedPng(renderImg, tikzDispl.val()) });
+                var tikzDispl = $("<textarea></textarea>").attr("rows", "20")
+                        .attr("id", "tikzCode" + counter).attr("cols", "50");//.attr("disabled", "true");
+                var renderImg = $("<img/>").attr("id", "renderImg" + counter).attr("src", "");
+                var id = counter;
+                var renderButton = $("<input>").attr("type", "button")
+                        .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Rerender in LaTeX")
+                        .click(function () {
+                            fetchLatexRenderedPng(id)
+                        });
 
 //                elem.append(canvas);
                 elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
                 elem.append(renderButton).append($("<br>"));
                 elem.append(renderImg);
+
+                counter++;
             } else { // find all the (existing) elements
 //                canvas = elem.find("canvas");
                 tikzDispl = elem.find("textarea");
                 renderImg = elem.find("img");
+                var id = renderImg.attr("id").replace(/^renderImg/, "");
             }
 //            canvas = canvas[0];
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
+            fetchLatexRenderedPng(id);
 //            drawAutomaton(automaton, canvas);
         }
 
-        function fetchLatexRenderedPng(imgElem, tikz) {
-            imgElem.attr("src", "loading.gif");
+        function fetchLatexRenderedPng(count) {
+            var button = $("#renderBtn" + count);
+            var img = $("#renderImg" + count);
+            var tikz = $("#tikzCode" + count).val();
+
+            button.prop("disabled", true);
+            img.attr("src", "loading.gif");
+
             $.ajax({
                 url: encodeURI("render.php"),
                 type: "POST",
                 data: "tikz=" + tikz,
                 mimeType: "text/plain; charset=x-user-defined",
                 success: function (imgURL) {
-                    imgElem.attr("src", imgURL);
+                    button.prop("disabled", false);
+                    img.attr("src", imgURL);
                 },
                 error: function (xhr, textStatus) {
-                    imgElem.attr("src", ""); // TODO some sort of error img or something
+                    img.attr("src", ""); // TODO some sort of error img or something
+                    button.prop("disabled", false);
                     alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
                 }
             });
