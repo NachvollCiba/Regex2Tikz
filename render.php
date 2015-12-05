@@ -72,11 +72,11 @@ function get_quicklatex_img_url($tikz) {
             if ($status == 0) { // no errors
                 return json_encode(array("url" => $image_url, "width" => $image_width, "height" => $image_height));
             } else {
-                return json_encode(array("url" => "error.png", "width" => 256, "height" => 256));
+                return json_encode(array("url" => "error.png", "width" => 128, "height" => 128));
             }
 
         } else {
-            return json_encode(array("url" => "error.png", "width" => 256, "height" => 256));
+            return json_encode(array("url" => "error.png", "width" => 128, "height" => 128));
         }
     }
 }

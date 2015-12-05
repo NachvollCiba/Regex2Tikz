@@ -8,7 +8,13 @@
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
+    <script src="lib/tooltip.js"></script> <? tooltip.js from bootstrap ?>
     <script type="text/javascript">
+        // initialize tooltips
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        });
+
         function submit() {
             var regex = $("#regex").val();
             try {
@@ -16,16 +22,29 @@
                 console.log("Compiling regular expression to nfa");
                 var nfa = parser.parse();
                 console.log("Creating DFA");
-                var dfa = nfa2dfa(nfa, parser.alphabet);
+                var dfa = nfa2dfa(nfa, parser.alphabet, $("#generateSink").is(":checked"));
                 console.log("Minimizing DFA");
                 var minDFA = minimize(dfa);
 
                 $("#result").show();
 
-                console.log("Creating HTML elements for the nfa");
-                fillResult($("#innerNFA"), nfa);
-                console.log("Creating HTML elements for the powerset dfa");
-                fillResult($("#innerDFA"), dfa);
+                if ($("#showNFA").is(":checked")) {
+                    console.log("Creating HTML elements for the nfa");
+                    $("#nfaDiv").show();
+                    fillResult($("#innerNFA"), nfa);
+                } else {
+                    $("#nfaDiv").hide();
+                }
+
+                if ($("#showDFA").is(":checked")) {
+                    console.log("Creating HTML elements for the powerset dfa");
+                    $("#dfaDiv").show();
+                    fillResult($("#innerDFA"), dfa);
+                } else {
+                    $("#dfaDiv").hide();
+                }
+
+
                 console.log("Creating HTML elements for the minimal dfa");
                 fillResult($("#innerMinDFA"), minDFA);
 
@@ -179,9 +198,11 @@
 </div>
 </p>
 
+<hr>
+
 <span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
 
-<div hidden id="options" class="group" style="text-align: left">
+<div hidden id="options"  style="text-align: left">
     Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"><br>
     <datalist id="emptyWordList">
         <option value="\varepsilon">&epsilon;</option>
@@ -189,10 +210,22 @@
         <option value="\lambda">&lambda;</option>
         <option value=" ">(Nothing)</option>
     </datalist>
-    <input type="checkbox" id="sinkGenerate"> Generate sink state<br>
-    <input type="checkbox" id="showNFA" checked> Also show NFA<br>
-    <input type="checkbox" id="showPSDFA" checked> Also show non-minimal powerset DFA<br>
-    State name prefix: <input type="text" id="statePrefix" value=""><br>
+    <span data-toggle="tooltip" data-placement="right" title="Specifiy a prefix to apply to each state label (e.g.,
+    if you write 'q' then the states will be named q0, q1, ...)">
+        State name prefix: <input type="text" id="statePrefix" value="">
+    </span><br>
+    <span data-toggle="tooltip" data-placement="right" title="Explicitly generate a sink state in deterministic
+    automatons">
+        <input type="checkbox" id="generateSink">Generate sink state
+    </span><br>
+    <span data-toggle="tooltip" data-placement="right" title="Generate the nondeterministic automaton that is directly
+    generated from the regular expression">
+        <input type="checkbox" id="showNFA" checked> Also show NFA
+     </span><br>
+    <span data-toggle="tooltip" data-placement="right" title="Generate the deterministic powerset automaton before the
+    minimization process">
+        <input type="checkbox" id="showDFA" checked> Also show non-minimal powerset DFA
+    </span><br>
 </div>
 
 <hr>

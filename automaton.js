@@ -5,7 +5,7 @@
 const EPS = ""; // constant for epsilon
 
 //
-function nfa2dfa(nfa, alphabet) {
+function nfa2dfa(nfa, alphabet, withSink) {
     // empty automaton
     if (nfa.length == 0) {
         return [];
@@ -76,13 +76,34 @@ function nfa2dfa(nfa, alphabet) {
         }
     }
 
-    // assign new names for the states
-    var id = 0;
-    dfa.forEach(function (state) {
-        state.name = id++;
+    if (withSink) {
+        generateSinkState(dfa, alphabet);
+    }
+
+    renameStates(dfa);
+    return dfa;
+}
+
+function generateSinkState(automaton, alphabet) {
+    // create sink state
+    var sink = new State(automaton.length, false, false);
+    for (var symb of alphabet) {
+        sink.addNextState(symb, sink); // add self-loops under every symbol
+    }
+
+    var sinkIsReached = false;
+    automaton.forEach(function(state) {
+        for (var symb of alphabet) {
+            if (state.nextStates(symb).length === 0) {
+                sinkIsReached = true;
+                state.addNextState(symb, sink);
+            }
+        }
     });
 
-    return dfa;
+    if (sinkIsReached) {
+        automaton.push(sink);
+    }
 }
 
 function potStateName(stateSet) {
@@ -208,12 +229,15 @@ function minimize(dfa) {
     }
 
     // rename the states
-    var id = 0;
-    minDFA.forEach(function (state) {
-        state.name = id++;
-    });
-
+    renameStates(minDFA);
     return minDFA;
+}
+
+function renameStates(states) {
+    var prefix = $("#statePrefix").val();
+    for (var i = 0; i < states.length; i++) {
+        states[i].name = prefix + i;
+    }
 }
 
 
@@ -310,6 +334,7 @@ function RegexParser(regex) {
         // set the first state as start and the last state as accepting
         nfa[0].isStart = true;
         nfa[nfa.length-1].isFinal = true;
+        renameStates(nfa);
 
         return nfa;
     };
