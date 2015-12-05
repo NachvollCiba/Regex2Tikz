@@ -8,7 +8,10 @@ function convertToTikz(nfa) {
 
     // initialize additional state attributes
     nfa.forEach(function (state) {
-        state.freeDirs = ["right", "below", "left", "above"];
+        state.freeDirs = ["below", "right", "above"];
+        if (!state.isStart) {
+            state.freeDirs.unshift("left");
+        }
         state.position = [Math.random(), Math.random()];
     });
 
@@ -174,12 +177,20 @@ function toInternalID(name) {
 
 
 function layoutAut(states) {
-    const NODE_CHARGE = 1.5;
-    const ITER_THRESHOLD = 100;
-    const EDGE_CONST = .1;
+    const ITER_THRESHOLD = 1000;
+
+    const NODE_CHARGE = 5;
+    const EDGE_CONST = .15;
+    const GRAV_CONST = .1;
 
     // put the start state to the left
     states[0].position[0] = -2 * states.length;
+
+    // collect the set of connected states for each state
+    for (var i = 0; i < states.length; i++) {
+        states[i].conStates = listOfConnectedStates(states[i]);
+    }
+
 
     for (var i = 0; i < ITER_THRESHOLD; i++) {
         var totalDelta = 0;
@@ -192,22 +203,31 @@ function layoutAut(states) {
             movDeltas[x] = [0, 0];
         }
 
-        for (x = 0; x < states.length; x++) {
-            // collect all connected states (TODO only compute once)
-            var conStates = listOfConnectedStates(states[x]);
+        // apply "gravitational" force towards center (0,0)
+        for (var x = 0; x < states.length; x++) {
+            var len = vecLen(states[x].position);
+            var unit = unitVector(states[x].position);
+            var val = -GRAV_CONST * Math.pow(len, 1); // F = -c*r
+
+            movDeltas[x][0] += val * unit[0];
+            movDeltas[x][1] += val * unit[1];
+        }
+
+        for (var x = 0; x < states.length; x++) {
             var movDelta = [0, 0];
 
-            // calculate repulsive force for every other state
             for (var y = x + 1; y < states.length; y++) {
+                // compute repulsive force for every other state
                 var dist = euclideanDistance(states[x].position, states[y].position);
-                var val = NODE_CHARGE * Math.pow(1 / dist, 3); // F = c/(r**2)
+                var val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
                 var unit = unitVector(vecDifference(states[x].position, states[y].position));
 
                 movDelta[0] += val * unit[0];
                 movDelta[1] += val * unit[1];
                 deltaE += val;
 
-                if (states[y].name in conStates) {
+                // compute attracting force for every connected state
+                if (states[x].conStates.has(states[y])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
 
                     movDelta[0] += val * unit[0];
@@ -215,6 +235,8 @@ function layoutAut(states) {
                     deltaD = val;
                 }
 
+
+                // store the move deltas for the states
                 movDeltas[x][0] += movDelta[0];
                 movDeltas[x][1] += movDelta[1];
 
@@ -232,6 +254,21 @@ function layoutAut(states) {
             states[x].position[1] += movDeltas[x][1];
         }
     }
+
+    //// last step: center all states around [0,0]
+    //var offsetX = 0; var offsetY = 0;
+    //states.forEach(function(state) {
+    //    offsetX += state.position[0];
+    //    offsetY += state.position[1];
+    //});
+    //
+    //offsetX /= states.length;
+    //offsetY /= states.length;
+    //console.log(offsetX + " " + offsetY);
+    //states.forEach(function(state) {
+    //    state.position[0] -= offsetX;
+    //    state.position[1] -= offsetY;
+    //});
 }
 
 function unitVector(vec) {

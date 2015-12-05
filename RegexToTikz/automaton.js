@@ -218,13 +218,13 @@ function minimize(dfa) {
 
 
 function listOfConnectedStates(state) {
-    var conStates = [];
+    var conStates = new Set();
     for (var symb in state.transitions) {
         // add all next states to the conStates set
         for (y = 0; y < state.transitions[symb].length; y++) {
             var nextState = state.transitions[symb][y];
             if (nextState != state) {
-                conStates[nextState.name] = true;
+                conStates.add(nextState);
             }
         }
     }

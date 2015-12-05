@@ -64,19 +64,19 @@ function get_quicklatex_img_url($tikz) {
             $status = $regs[1];
             $image_url = $regs[2];
 //            $image_align = $regs[3];
-//            $image_width = $regs[4];
-//            $image_height = $regs[5];
+            $image_width = $regs[4];
+            $image_height = $regs[5];
 //            $error_msg = $regs[6];
 
 
             if ($status == 0) { // no errors
-                return $image_url;
+                return json_encode(array("url" => $image_url, "width" => $image_width, "height" => $image_height));
             } else {
-                return "error.png";
+                return json_encode(array("url" => "error.png", "width" => 256, "height" => 256));
             }
 
         } else {
-            return "error.png";
+            return json_encode(array("url" => "error.png", "width" => 256, "height" => 256));
         }
     }
 }

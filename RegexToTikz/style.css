@@ -23,6 +23,10 @@ body {
     border: solid 1px black;
 }
 
+.renderBtn {
+    margin: 10px;
+}
+
 #input {
     margin-top:30px;
 }

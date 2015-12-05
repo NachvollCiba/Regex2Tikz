@@ -136,16 +136,21 @@
             var tikz = $("#tikzCode" + count).val();
 
             button.prop("disabled", true);
-            img.attr("src", "loading.gif");
+            img.attr("src", "loading.gif").attr("width", "128");
 
             $.ajax({
                 url: encodeURI("render.php"),
                 type: "POST",
                 data: "tikz=" + tikz,
                 mimeType: "text/plain; charset=x-user-defined",
-                success: function (imgURL) {
+                success: function (responseJSON) {
+                    // parse response
+                    var response = JSON.parse(responseJSON);
+                    var width = Math.min(.9 * $("#result").width(), response["width"]);
+
+                    // adjust DOM elements
                     button.prop("disabled", false);
-                    img.attr("src", imgURL);
+                    img.attr("src", response["url"]).attr("width", width);
                 },
                 error: function (xhr, textStatus) {
                     img.attr("src", ""); // TODO some sort of error img or something
@@ -185,12 +190,14 @@
         <option value=" ">(Nothing)</option>
     </datalist>
     <input type="checkbox" id="sinkGenerate"> Generate sink state<br>
+    <input type="checkbox" id="showNFA" checked> Also show NFA<br>
+    <input type="checkbox" id="showPSDFA" checked> Also show non-minimal powerset DFA<br>
     State name prefix: <input type="text" id="statePrefix" value=""><br>
 </div>
 
 <hr>
 
-<div hidden id="result">
+<div hidden id="result" width="100%">
     <div class="group" id="nfaDiv">
         <h2 id="nfaHeader" class="linked"
             onclick="revealElem($('#innerNFA'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
