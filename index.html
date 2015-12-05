@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Regex to Tikz</title>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+
+    <script src="automaton.js"></script>
+    <script src="tikzCreation.js"></script>
+    <script src="lib/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript">
+        function submit() {
+            var regex = $("#regex").val();
+            try {
+                var parser = new RegexParser(regex);
+                console.log("Compiling regular expression to nfa");
+                var nfa = parser.parse();
+                console.log("Creating DFA");
+                var dfa = nfa2dfa(nfa, parser.alphabet);
+                console.log("Minimizing DFA");
+                var minDFA = minimize(dfa);
+
+                $("#result").show();
+
+                console.log("Creating HTML elements for the nfa");
+                fillResult($("#innerNFA"), nfa);
+                console.log("Creating HTML elements for the powerset dfa");
+                fillResult($("#innerDFA"), dfa);
+                console.log("Creating HTML elements for the minimal dfa");
+                fillResult($("#innerMinDFA"), minDFA);
+
+                var alpha = [];
+                parser.alphabet.forEach(function(symb) { alpha.push(symb) });
+                $("#alphDisplay").text("{" + alpha.sort() + "}");
+            } catch (e) {
+                console.log(e.stack);
+            }
+        }
+
+        function drawAutomaton(nfa, canvas) {
+            var ctx = canvas.getContext("2d");
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            var zoom = 20;
+
+            const offsetX = canvas.width / 2;
+            const offsetY = canvas.height / 2;
+
+            const stateDia = .4 * zoom;
+            const stateRad = stateDia / 2;
+
+            for (var i = 0; i < nfa.length; i++) {
+                var state = nfa[i];
+                var posX = state.position[0] * zoom + offsetX;
+                var posY = -state.position[1] * zoom + offsetY;
+
+                ctx.beginPath();
+                ctx.arc(posX, posY, stateDia, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.moveTo(posX, posY);
+                ctx.fillText(state.name, posX, posY);
+
+                for (var symb in state.transitions) {
+                    var nextStates = state.transitions[symb];
+
+                    for (var j = 0; j < nextStates.length; j++) {
+                        var otherX = nextStates[j].position[0] * zoom + offsetX;
+                        var otherY = -nextStates[j].position[1] * zoom + offsetY;
+
+                        var dirX = otherX > posX ? 1 : -1;
+                        var dirY = otherY > posY ? 1 : -1;
+
+                        ctx.moveTo(posX, posY);
+                        ctx.lineTo(otherX, otherY);
+                        ctx.stroke();
+
+                        var midX = (posX + (otherX - posX) / 2);
+                        var midY = (posY + (otherY - posY) / 2);
+                        ctx.moveTo(midX, midY);
+                        symb = symb == EPS ? "€" : symb;
+                        ctx.fillText(symb, midX, midY);
+                    }
+                }
+
+            }
+        }
+
+        function revealElem(elem, anchor, showText, hideText) {
+            if (elem.is(":visible")) {
+                elem.hide();
+                anchor.text(showText);
+            } else {
+                elem.show();
+                anchor.text(hideText);
+            }
+        }
+
+        var counter = 0;
+        function fillResult(elem, automaton) {
+            if (elem.children().length === 0) { // create all the elements
+//                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
+                var tikzDispl = $("<textarea></textarea>").attr("rows", "20")
+                        .attr("id", "tikzCode" + counter).attr("cols", "50");//.attr("disabled", "true");
+                var renderImg = $("<img/>").attr("id", "renderImg" + counter).attr("src", "");
+                var id = counter;
+                var renderButton = $("<input>").attr("type", "button")
+                        .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Rerender in LaTeX")
+                        .click(function () {
+                            fetchLatexRenderedPng(id)
+                        });
+
+//                elem.append(canvas);
+                elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
+                elem.append(renderButton).append($("<br>"));
+                elem.append(renderImg);
+
+                counter++;
+            } else { // find all the (existing) elements
+//                canvas = elem.find("canvas");
+                tikzDispl = elem.find("textarea");
+                renderImg = elem.find("img");
+                var id = renderImg.attr("id").replace(/^renderImg/, "");
+            }
+//            canvas = canvas[0];
+
+            // populate the element contents
+            tikzDispl.val(convertToTikz(automaton));
+            fetchLatexRenderedPng(id);
+//            drawAutomaton(automaton, canvas);
+        }
+
+        function fetchLatexRenderedPng(count) {
+            var button = $("#renderBtn" + count);
+            var img = $("#renderImg" + count);
+            var tikz = $("#tikzCode" + count).val();
+
+            button.prop("disabled", true);
+            img.attr("src", "loading.gif").attr("width", "128");
+
+            $.ajax({
+                url: encodeURI("render.php"),
+                type: "POST",
+                data: "tikz=" + tikz,
+                mimeType: "text/plain; charset=x-user-defined",
+                success: function (responseJSON) {
+                    // parse response
+                    var response = JSON.parse(responseJSON);
+                    var width = Math.min(.9 * $("#result").width(), response["width"]);
+
+                    // adjust DOM elements
+                    button.prop("disabled", false);
+                    img.attr("src", response["url"]).attr("width", width);
+                },
+                error: function (xhr, textStatus) {
+                    img.attr("src", ""); // TODO some sort of error img or something
+                    button.prop("disabled", false);
+                    alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+<h1>Regex2Tikz</h1>
+<em>A simple tool for converting a regular expression into TIKZ code for its corresponding automatons.</em>
+<p>
+<div class="group" id="input">
+    <div id="inputInner">
+        <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div><br>
+        <input type="text" id="regex" placeholder="e.g. (a|b)*c" autofocus class="inputElement" list="regexList"><br>
+        <datalist id="regexList">
+            <option value="abc"></option>
+            <option value="(a|b)*c"></option>
+            <option value="(a|b|c)*a(a|b|c)*b(a|b|c)*c(a|b|c)*"></option>
+        </datalist>
+        <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
+    </div>
+</div>
+</p>
+
+<span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
+
+<div hidden id="options" class="group" style="text-align: left">
+    Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"><br>
+    <datalist id="emptyWordList">
+        <option value="\varepsilon">&epsilon;</option>
+        <option value="\epsilon">&#x3f5;</option>
+        <option value="\lambda">&lambda;</option>
+        <option value=" ">(Nothing)</option>
+    </datalist>
+    <input type="checkbox" id="sinkGenerate"> Generate sink state<br>
+    <input type="checkbox" id="showNFA" checked> Also show NFA<br>
+    <input type="checkbox" id="showPSDFA" checked> Also show non-minimal powerset DFA<br>
+    State name prefix: <input type="text" id="statePrefix" value=""><br>
+</div>
+
+<hr>
+
+<div hidden id="result" width="100%">
+    <div class="group" id="nfaDiv">
+        <h2 id="nfaHeader" class="linked"
+            onclick="revealElem($('#innerNFA'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
+            Resulting NFA &#x25BC;</h2>
+        <div hidden id="innerNFA"></div></div>
+
+    <div class="group" id="dfaDiv">
+        <h2 id="dfaHeader" class="linked"
+            onclick="revealElem($('#innerDFA'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
+            Non-minimal powerset DFA &#x25BC;</h2>
+        <div hidden id="innerDFA"></div></div>
+
+    <div class="group" id="minDFADiv">
+        <h2 id="minDFAHeader" class="linked"
+            onclick="revealElem($('#innerMinDFA'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
+            Minimized DFA &#x25BC;</h2>
+
+        <div hidden id="innerMinDFA"></div>
+    </div>
+
+    <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
+</div>
+</body>
+</html>
