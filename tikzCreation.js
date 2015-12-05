@@ -47,12 +47,6 @@ function generateStateCode(state) {
 }
 
 function generateTransitionsCode(state) {
-    //var vecs= [ [1,0], [1,-1], [0,-1], [-1,-1], [-1,0], [-1,1], [0,1], [1,1] ];
-    //for (var i = 0; i < vecs.length; i++) {
-    //    //console.log(vecLen(vecs[i]) + " " + dot([0,1], vecs[i]));
-    //    console.log(vecs[i] + " " + angle([0,1], vecs[i]));
-    //}
-
     var fromName = toInternalID(state.name);
 
     // build a map: state => symbols for transitions to that state

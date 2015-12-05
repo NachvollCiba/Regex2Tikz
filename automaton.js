@@ -311,16 +311,17 @@ function RegexParser(regex) {
      *
      * regex -> term | term "|" regex
      * term -> factor term?
-     * factor -> atom "*"*
+     * factor -> atom ("*" | '+' | '?')*
      * atom -> alphanum | (regex)
      */
+
 
     this.input = regex.replace(/\s/g, ""); // remove all whitespace
 
     // compute the alphabet used by this regex
     this.alphabet = new Set();
     for (var i=0; i<this.input.length; i++) {
-        if (validSymbol(this.input[i])) {
+        if (validSymbol(this.input[i]) && this.input[i] != "$") {
             this.alphabet.add(this.input[i]);
         }
     }
@@ -329,7 +330,7 @@ function RegexParser(regex) {
 
     // parses the function and returns an nfa if the regex is valid
     this.parse = function() {
-        var nfa = this.regex();
+        var nfa = this.regex().automaton;
 
         // set the first state as start and the last state as accepting
         nfa[0].isStart = true;
@@ -346,8 +347,11 @@ function RegexParser(regex) {
          */
 
         var next = this.peekInput();
+        var result = {};
         if (this.hasInput() && (next == "(" || validSymbol(next))) {
-            var nfa = this.term();
+            var t1 = this.term();
+            result.parsed = t1.parsed;
+            var nfa = t1.automaton;
         } else {
             throw ("Expected '(' or any alphanumeric character, got " + next);
         }
@@ -356,13 +360,16 @@ function RegexParser(regex) {
         next = this.peekInput();
         if (this.hasInput() && next == "|") {
             this.popInput();
+            result.parsed += "|";
 
             next = this.peekInput();
             if (next != "(" && !validSymbol(next)) {
                 throw ("Expected '(' or any alphanumeric character, got " + next);
             }
 
-            var nfa2 = this.regex();
+            var t2 = this.regex();
+            result.parsed += t2.parsed;
+            var nfa2 = t2.automaton;
 
             // retrieve in- and out states
             var in1 = nfa[0], in2 = nfa2[0];
@@ -382,7 +389,8 @@ function RegexParser(regex) {
             nfa.push(out);
         }
 
-        return nfa;
+        result.automaton = nfa;
+        return result;
     };
 
     this.term = function () {
@@ -391,12 +399,17 @@ function RegexParser(regex) {
          * term -> factor term?
          */
 
-        var nfa = this.factor();
+        var result = {};
+        var fac = this.factor();
+        result.parsed = fac.parsed;
+        var nfa = fac.automaton;
 
         var next = this.peekInput();
         if (this.hasInput() && (next == "(" || validSymbol(next))) {
 
-            var nfa2 = this.term();
+            var fac2 = this.term();
+            result.parsed += fac2.parsed;
+            var nfa2 = fac2.automaton;
 
             // concatenate the nfas with an epsilon-transition
             var out = nfa[nfa.length - 1];
@@ -407,7 +420,8 @@ function RegexParser(regex) {
             nfa = nfa.concat(nfa2);
         }
 
-        return nfa;
+        result.automaton = nfa;
+        return result;
     };
 
     this.factor = function () {
@@ -416,30 +430,68 @@ function RegexParser(regex) {
          * factor -> atom "*"*
          */
 
-        var nfa = this.atom();
+        var result = {};
+        var atom = this.atom();
+        result.parsed = atom.parsed;
+        var nfa = atom.automaton;
 
-        while (this.hasInput() && this.peekInput() == "*") {
-            this.popInput(); // remove "*" from input
+        loop: {
+            while (this.hasInput()) {
+                var nfaIn = nfa[0];
+                var nfaOut = nfa[nfa.length - 1];
 
-            var nfaIn = nfa[0];
-            var nfaOut = nfa[nfa.length - 1];
+                switch (this.peekInput()) {
+                    case "+":
+                        var nfaClone = new RegexParser(result.parsed + "*").factor().automaton;
+                        nfaOut.merge(nfaClone[0]);
+                        nfa = nfa.concat(nfaClone);
+                        result.parsed += this.popInput();
+                        break;
+                    case "*":
+                        result.parsed += this.popInput();
 
-            var _in = new State(this.lastID++);
-            var out = new State(this.lastID++);
+                        var _in = new State(this.lastID++);
+                        var out = new State(this.lastID++);
 
-            // add epsilon transitions
-            _in.merge(nfaIn);
-            nfaOut.merge(out);
+                        // add epsilon transitions
+                        _in.merge(nfaIn);
+                        nfaOut.merge(out);
 
-            _in.merge(out);
-            nfaOut.merge(nfaIn);
+                        _in.merge(out);
+                        nfaOut.merge(nfaIn);
 
-            // add the states to the nfa array
-            nfa.unshift(_in);
-            nfa.push(out);
+                        // add the states to the nfa array
+                        nfa.unshift(_in);
+                        nfa.push(out);
+                        break;
+                    case "?":
+                        result.parsed += this.popInput();
+
+                        // create states for epsilon alternative
+                        var epsIn = new State(this.lastID++);
+                        var epsOut = new State(this.lastID++);
+                        epsIn.addNextState(EPS, epsOut);
+
+                        var _in = new State(this.lastID++);
+                        var out = new State(this.lastID++);
+
+                        // merge states
+                        _in.merge(epsIn); _in.merge(nfaIn);
+                        nfaOut.merge(out); epsOut.merge(out);
+
+                        //add the states to the array
+                        nfa.unshift(epsIn); nfa.unshift(_in);
+                        nfa.push(epsOut); nfa.push(out);
+
+                        break;
+                    default:
+                        break loop;
+                }
+            }
         }
 
-        return nfa;
+        result.automaton = nfa;
+        return result;
     };
 
     this.atom = function () {
@@ -448,22 +500,29 @@ function RegexParser(regex) {
          * atom -> alphanum | (regex)
          */
 
+        var result = {};
         var next = this.popInput();
+        result.parsed = next;
+
         if (next == "(") {
-            var nfa = this.regex();
+            var reg = this.regex();
 
             next = this.popInput();
             if (next != ")") {
                 throw ("Expected ')', got " + next);
             }
-
-            return nfa;
+            result.parsed += reg.parsed + next;
+            result.automaton = reg.automaton;
+            return result;
         } else if (validSymbol(next)) {
             var _in = new State(this.lastID++);
             var out = new State(this.lastID++);
 
+            next = next === '$'? EPS : next;
+
             _in.addNextState(next, out);
-            return [_in, out];
+            result.automaton = [_in, out];
+            return result;
         } else {
             throw ("Expected '(' or any alphanumeric character, got " + next);
         }
@@ -493,6 +552,17 @@ function RegexParser(regex) {
     };
 }
 
+function cloneAutomaton(aut) {
+    var clonedAut = [];
+
+    aut.forEach(function(state) {
+        var clonedState = $.extend(true, {}, state);
+        clonedAut.push(clonedState);
+    });
+
+    return clonedAut;
+}
+
 function validSymbol(symb){
     // for now, only allow alphanumeric strings to be accepted
 
@@ -503,7 +573,8 @@ function validSymbol(symb){
     var code = symb.charCodeAt(0);
     if (!(code > 47 && code < 58) && // numeric (0-9)
         !(code > 64 && code < 91) && // upper alpha (A-Z)
-        !(code > 96 && code < 123)) { // lower alpha (a-z)
+        !(code > 96 && code < 123) &&  // lower alpha (a-z)
+        !(code == 36)) { // dollar sign ($) for the empty word
         return false;
     }
     return true;

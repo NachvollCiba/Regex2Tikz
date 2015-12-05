@@ -52,6 +52,8 @@
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
             } catch (e) {
+                console.log("An exception occured");
+                console.log(e);
                 console.log(e.stack);
             }
         }
@@ -124,7 +126,7 @@
                 var renderImg = $("<img/>").attr("id", "renderImg" + counter).attr("src", "");
                 var id = counter;
                 var renderButton = $("<input>").attr("type", "button")
-                        .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Rerender in LaTeX")
+                        .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Render again")
                         .click(function () {
                             fetchLatexRenderedPng(id)
                         });
@@ -192,6 +194,9 @@
             <option value="abc"></option>
             <option value="(a|b)*c"></option>
             <option value="(a|b|c)*a(a|b|c)*b(a|b|c)*c(a|b|c)*"></option>
+            <option value="(a|c)c* (a(a|c))*b(acc*a | c(ca*c)*a)"></option>
+            <option value="(a|c)* a(a|c)* b(a|c)* c(a|c)* | (a|c)* c(a|c)* b(a|c)* a(a|c)*"></option>
+            <option value="a?(bc)+de+(f(g|h))?"></option>
         </datalist>
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
@@ -217,6 +222,10 @@
     <span data-toggle="tooltip" data-placement="right" title="Explicitly generate a sink state in deterministic
     automatons">
         <input type="checkbox" id="generateSink">Generate sink state
+    </span><br>
+    <span data-toggle="tooltip" data-placement="right" title="Each alphanumeric character entered will be used
+    as an alphabet symbol (e.g. 'abc, d' -> {a,b,c,d})">
+        Alphabet <input type="text" id="alphabet" value="" disabled>
     </span><br>
     <span data-toggle="tooltip" data-placement="right" title="Generate the nondeterministic automaton that is directly
     generated from the regular expression">
