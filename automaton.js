@@ -14,16 +14,18 @@ function nfa2dfa(nfa, alphabet, withSink) {
     // build the eps-closure of the start state
     var startClosure = epsClosure(nfa[0]);
     var newStart = new State(potStateName(startClosure[0]), true, startClosure[1]);
+    console.log("Epsilon-closure of start state: " + newStart.name + "," + newStart.isFinal);
     var dfa = [newStart];
 
     var stack = []; // stack of state sets to work on
-    var potStates = Object.create(null); // dictionary state name => state
+    var potStates = new Map(); // dictionary state name => state
 
     stack.push([startClosure[0], newStart.name]);
-    potStates[newStart.name] = newStart;
+    potStates.set(newStart.name, newStart);
 
     while (stack.length > 0) {
         var next = stack.shift();
+        console.log("Doing state " + next[1]);
 
         for (var symb of alphabet) {
             var symbConnected = new Set();
@@ -32,7 +34,7 @@ function nfa2dfa(nfa, alphabet, withSink) {
             // collect all states that are connected with the alphabet symbol
             for (var curState of next[0]) {
                 isFinal |= curState.isFinal;
-
+                console.log("Added state " + curState.name + ", isFinal: " + isFinal);
 
                 curState.nextStates(symb).forEach(function (nextState) {
                     symbConnected.add(nextState);
@@ -60,17 +62,18 @@ function nfa2dfa(nfa, alphabet, withSink) {
 
                 // create the set state if it does not exist
                 var potState = null;
-                if (stateName in potStates) {
-                    potState = potStates[stateName];
+                if (potStates.has(stateName)) {
+                    potState = potStates.get(stateName);
                 } else {
                     potState = new State(stateName, false, isFinal);
+                    console.log("Created new State: " + potState.name + ", " + potState.isFinal);
                     stack.push([symbConnected, stateName]);
-                    potStates[stateName] = potState;
+                    potStates.set(stateName,potState);
                     dfa.push(potState);
                 }
 
                 // add the transition
-                var startState = potStates[next[1]];
+                var startState = potStates.get(next[1]);
                 startState.addNextState(symb, potState);
             }
         }
@@ -172,7 +175,6 @@ function minimize(dfa) {
                     if (eqNext.length > 0) {
                         next = next[0];
                         eqNext = eqNext[0];
-
                         if (!eqStatesMap.get(next).has(eqNext)) {
                             eqStates.delete(eqState);
                             eqStatesMap.get(eqState).delete(state);
@@ -311,12 +313,14 @@ function RegexParser(regex) {
      *
      * regex -> term | term "|" regex
      * term -> factor term?
-     * factor -> atom ("*" | '+' | '?')*
+     * factor -> atom ("*")*
      * atom -> alphanum | (regex)
      */
 
-
-    this.input = regex.replace(/\s/g, ""); // remove all whitespace
+    // PARSER SETUP
+    this.origInput = regex.replace(/\s/g, ""); // remove all whitespace
+    this.input = rewriteExpression(this.origInput);
+    this.simpleInput = this.input.slice(0);
 
     // compute the alphabet used by this regex
     this.alphabet = new Set();
@@ -328,9 +332,10 @@ function RegexParser(regex) {
 
     this.lastID = 0; // counter for state ids
 
+
     // parses the function and returns an nfa if the regex is valid
     this.parse = function() {
-        var nfa = this.regex().automaton;
+        var nfa = this.regex();
 
         // set the first state as start and the last state as accepting
         nfa[0].isStart = true;
@@ -347,11 +352,8 @@ function RegexParser(regex) {
          */
 
         var next = this.peekInput();
-        var result = {};
         if (this.hasInput() && (next == "(" || validSymbol(next))) {
-            var t1 = this.term();
-            result.parsed = t1.parsed;
-            var nfa = t1.automaton;
+            var nfa = this.term();
         } else {
             throw ("Expected '(' or any alphanumeric character, got " + next);
         }
@@ -360,16 +362,13 @@ function RegexParser(regex) {
         next = this.peekInput();
         if (this.hasInput() && next == "|") {
             this.popInput();
-            result.parsed += "|";
 
             next = this.peekInput();
             if (next != "(" && !validSymbol(next)) {
                 throw ("Expected '(' or any alphanumeric character, got " + next);
             }
 
-            var t2 = this.regex();
-            result.parsed += t2.parsed;
-            var nfa2 = t2.automaton;
+            var nfa2 = this.regex();
 
             // retrieve in- and out states
             var in1 = nfa[0], in2 = nfa2[0];
@@ -389,8 +388,7 @@ function RegexParser(regex) {
             nfa.push(out);
         }
 
-        result.automaton = nfa;
-        return result;
+        return nfa;
     };
 
     this.term = function () {
@@ -399,17 +397,12 @@ function RegexParser(regex) {
          * term -> factor term?
          */
 
-        var result = {};
-        var fac = this.factor();
-        result.parsed = fac.parsed;
-        var nfa = fac.automaton;
+        var nfa = this.factor();
 
         var next = this.peekInput();
         if (this.hasInput() && (next == "(" || validSymbol(next))) {
 
-            var fac2 = this.term();
-            result.parsed += fac2.parsed;
-            var nfa2 = fac2.automaton;
+            var nfa2 = this.term();
 
             // concatenate the nfas with an epsilon-transition
             var out = nfa[nfa.length - 1];
@@ -420,8 +413,7 @@ function RegexParser(regex) {
             nfa = nfa.concat(nfa2);
         }
 
-        result.automaton = nfa;
-        return result;
+        return nfa;
     };
 
     this.factor = function () {
@@ -430,68 +422,30 @@ function RegexParser(regex) {
          * factor -> atom "*"*
          */
 
-        var result = {};
-        var atom = this.atom();
-        result.parsed = atom.parsed;
-        var nfa = atom.automaton;
+        var nfa = this.atom();
 
-        loop: {
-            while (this.hasInput()) {
-                var nfaIn = nfa[0];
-                var nfaOut = nfa[nfa.length - 1];
+        while (this.hasInput() && this.peekInput() == '*') {
+            this.popInput(); // remove "*" from input
 
-                switch (this.peekInput()) {
-                    case "+":
-                        var nfaClone = new RegexParser(result.parsed + "*").factor().automaton;
-                        nfaOut.merge(nfaClone[0]);
-                        nfa = nfa.concat(nfaClone);
-                        result.parsed += this.popInput();
-                        break;
-                    case "*":
-                        result.parsed += this.popInput();
+            var nfaIn = nfa[0];
+            var nfaOut = nfa[nfa.length - 1];
 
-                        var _in = new State(this.lastID++);
-                        var out = new State(this.lastID++);
+            var _in = new State(this.lastID++);
+            var out = new State(this.lastID++);
 
-                        // add epsilon transitions
-                        _in.merge(nfaIn);
-                        nfaOut.merge(out);
+            // add epsilon transitions
+            _in.merge(nfaIn);
+            nfaOut.merge(out);
 
-                        _in.merge(out);
-                        nfaOut.merge(nfaIn);
+            _in.merge(out);
+            nfaOut.merge(nfaIn);
 
-                        // add the states to the nfa array
-                        nfa.unshift(_in);
-                        nfa.push(out);
-                        break;
-                    case "?":
-                        result.parsed += this.popInput();
-
-                        // create states for epsilon alternative
-                        var epsIn = new State(this.lastID++);
-                        var epsOut = new State(this.lastID++);
-                        epsIn.addNextState(EPS, epsOut);
-
-                        var _in = new State(this.lastID++);
-                        var out = new State(this.lastID++);
-
-                        // merge states
-                        _in.merge(epsIn); _in.merge(nfaIn);
-                        nfaOut.merge(out); epsOut.merge(out);
-
-                        //add the states to the array
-                        nfa.unshift(epsIn); nfa.unshift(_in);
-                        nfa.push(epsOut); nfa.push(out);
-
-                        break;
-                    default:
-                        break loop;
-                }
-            }
+            // add the states to the nfa array
+            nfa.unshift(_in);
+            nfa.push(out);
         }
 
-        result.automaton = nfa;
-        return result;
+        return nfa;
     };
 
     this.atom = function () {
@@ -500,20 +454,15 @@ function RegexParser(regex) {
          * atom -> alphanum | (regex)
          */
 
-        var result = {};
         var next = this.popInput();
-        result.parsed = next;
 
         if (next == "(") {
-            var reg = this.regex();
+            var nfa = this.regex();
 
             next = this.popInput();
             if (next != ")") {
                 throw ("Expected ')', got " + next);
             }
-            result.parsed += reg.parsed + next;
-            result.automaton = reg.automaton;
-            return result;
         } else if (validSymbol(next)) {
             var _in = new State(this.lastID++);
             var out = new State(this.lastID++);
@@ -521,11 +470,12 @@ function RegexParser(regex) {
             next = next === '$'? EPS : next;
 
             _in.addNextState(next, out);
-            result.automaton = [_in, out];
-            return result;
+            var nfa = [_in, out];
         } else {
             throw ("Expected '(' or any alphanumeric character, got " + next);
         }
+
+        return nfa;
     };
 
     // removes and returns the first char from the input string
@@ -551,6 +501,9 @@ function RegexParser(regex) {
         return this.input.length > 0;
     };
 }
+
+
+
 
 function cloneAutomaton(aut) {
     var clonedAut = [];
@@ -578,4 +531,55 @@ function validSymbol(symb){
         return false;
     }
     return true;
+}
+
+
+function rewriteExpression(expr) { // rewrite a regex as a "simple expression" using only "|", "*" and concatenation
+    var simplifiedExpr = expr.slice(0);
+    var idx;
+
+    while ((idx=simplifiedExpr.indexOf("?")) > -1) { // rewrite a? => (a|$)
+        var startIdx = findSubstring();
+        var len = idx - startIdx;
+        var substr = simplifiedExpr.substr(startIdx, len);
+        simplifiedExpr =
+            simplifiedExpr.substr(0, startIdx) +
+            "(" + substr + "|$)" +
+            simplifiedExpr.substr(startIdx + len + 1);
+    }
+
+    while ((idx=simplifiedExpr.indexOf("+")) > -1) { // rewrite a+ => aa*
+        var startIdx = findSubstring();
+        var len = idx - startIdx;
+        var substr = simplifiedExpr.substr(startIdx, len);
+        simplifiedExpr =
+            simplifiedExpr.substr(0, startIdx) +
+            substr + substr + "*" +
+            simplifiedExpr.substr(startIdx + len + 1);
+    }
+
+    return simplifiedExpr;
+
+    function findSubstring() {
+        var parCounter = 0;
+        var currentIdx = idx-1;
+        if (currentIdx < 0) {
+            return idx;
+        } else if (simplifiedExpr.charAt(currentIdx) != ")") {
+            return currentIdx;
+        } else {
+            parCounter = 1;
+            while (parCounter > 0 && --currentIdx > 0) {
+                var nextChar = simplifiedExpr.charAt(currentIdx);
+
+                if (nextChar == "(") {
+                    parCounter--;
+                } else if (nextChar == ")") {
+                    parCounter++;
+                }
+            }
+
+            return currentIdx;
+        }
+    }
 }

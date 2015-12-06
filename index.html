@@ -51,6 +51,7 @@
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
+                $("#simpleRegexDisplay").text(parser.simpleInput);
             } catch (e) {
                 console.log("An exception occured");
                 console.log(e);
@@ -200,21 +201,19 @@
         </datalist>
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
-</div>
-</p>
 
-<hr>
+    <hr width="75%">
 
-<span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
+    <span id="optionShowHide" class="linked" onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">Show options</span>
 
-<div hidden id="options"  style="text-align: left">
-    Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"><br>
-    <datalist id="emptyWordList">
-        <option value="\varepsilon">&epsilon;</option>
-        <option value="\epsilon">&#x3f5;</option>
-        <option value="\lambda">&lambda;</option>
-        <option value=" ">(Nothing)</option>
-    </datalist>
+    <div hidden id="options"  style="text-align:left;">
+        Symbol to use for the empty word: <input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"><br>
+        <datalist id="emptyWordList">
+            <option value="\varepsilon">&epsilon;</option>
+            <option value="\epsilon">&#x3f5;</option>
+            <option value="\lambda">&lambda;</option>
+            <option value=" ">(Nothing)</option>
+        </datalist>
     <span data-toggle="tooltip" data-placement="right" title="Specifiy a prefix to apply to each state label (e.g.,
     if you write 'q' then the states will be named q0, q1, ...)">
         State name prefix: <input type="text" id="statePrefix" value="">
@@ -235,9 +234,12 @@
     minimization process">
         <input type="checkbox" id="showDFA" checked> Also show non-minimal powerset DFA
     </span><br>
-</div>
+    </div>
 
-<hr>
+    <hr width="75%">
+</div>
+</p>
+
 
 <div hidden id="result" width="100%">
     <div class="group" id="nfaDiv">
@@ -261,6 +263,7 @@
     </div>
 
     <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
+    <h4>Simplified expression: <span id="simpleRegexDisplay"></span></h4>
 </div>
 </body>
 </html>
