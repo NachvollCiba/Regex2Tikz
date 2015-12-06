@@ -7,7 +7,9 @@
 
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
+    <script src="autCanvas.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
+    <script src="lib/jquery.mousewheel.min.js"></script>
     <script src="lib/tooltip.js"></script> <? tooltip.js from bootstrap ?>
     <script type="text/javascript">
         // initialize tooltips
@@ -59,55 +61,6 @@
             }
         }
 
-        function drawAutomaton(nfa, canvas) {
-            var ctx = canvas.getContext("2d");
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            var zoom = 20;
-
-            const offsetX = canvas.width / 2;
-            const offsetY = canvas.height / 2;
-
-            const stateDia = .4 * zoom;
-            const stateRad = stateDia / 2;
-
-            for (var i = 0; i < nfa.length; i++) {
-                var state = nfa[i];
-                var posX = state.position[0] * zoom + offsetX;
-                var posY = -state.position[1] * zoom + offsetY;
-
-                ctx.beginPath();
-                ctx.arc(posX, posY, stateDia, 0, 2 * Math.PI);
-                ctx.stroke();
-                ctx.moveTo(posX, posY);
-                ctx.fillText(state.name, posX, posY);
-
-                for (var symb in state.transitions) {
-                    var nextStates = state.transitions[symb];
-
-                    for (var j = 0; j < nextStates.length; j++) {
-                        var otherX = nextStates[j].position[0] * zoom + offsetX;
-                        var otherY = -nextStates[j].position[1] * zoom + offsetY;
-
-                        var dirX = otherX > posX ? 1 : -1;
-                        var dirY = otherY > posY ? 1 : -1;
-
-                        ctx.moveTo(posX, posY);
-                        ctx.lineTo(otherX, otherY);
-                        ctx.stroke();
-
-                        var midX = (posX + (otherX - posX) / 2);
-                        var midY = (posY + (otherY - posY) / 2);
-                        ctx.moveTo(midX, midY);
-                        symb = symb == EPS ? "€" : symb;
-                        ctx.fillText(symb, midX, midY);
-                    }
-                }
-
-            }
-        }
-
         function revealElem(elem, anchor, showText, hideText) {
             if (elem.is(":visible")) {
                 elem.hide();
@@ -119,37 +72,48 @@
         }
 
         var counter = 0;
+        var canvasCntrl = new Map(); //
         function fillResult(elem, automaton) {
             if (elem.children().length === 0) { // create all the elements
-//                var canvas = $("<canvas></canvas>").width(500).height(500).addClass("stateCanvas");
+                var canvas = $("<canvas></canvas>").attr("width", "500").attr("height", "500").addClass("stateCanvas");
                 var tikzDispl = $("<textarea></textarea>").attr("rows", "20")
-                        .attr("id", "tikzCode" + counter).attr("cols", "50");//.attr("disabled", "true");
+                        .attr("id", "tikzCode" + counter).attr("cols", "60");//.attr("disabled", "true");
                 var renderImg = $("<img/>").attr("id", "renderImg" + counter).attr("src", "");
-                var id = counter;
+                var id = counter + "";
                 var renderButton = $("<input>").attr("type", "button")
                         .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Render again")
                         .click(function () {
                             fetchLatexRenderedPng(id)
                         });
 
-//                elem.append(canvas);
+                elem.append(canvas);
+                var controller = new CanvasController(canvas, automaton);
+                canvasCntrl.set(id, controller);
+
                 elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
                 elem.append(renderButton).append($("<br>"));
                 elem.append(renderImg);
 
                 counter++;
             } else { // find all the (existing) elements
-//                canvas = elem.find("canvas");
+                canvas = elem.find("canvas");
                 tikzDispl = elem.find("textarea");
                 renderImg = elem.find("img");
                 var id = renderImg.attr("id").replace(/^renderImg/, "");
             }
-//            canvas = canvas[0];
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
             fetchLatexRenderedPng(id);
-//            drawAutomaton(automaton, canvas);
+
+            // update the canvas
+            var cntrl = canvasCntrl.get(id);
+            cntrl.automaton = automaton;
+            controller.changelistener = function(state) {
+                tikzDispl.val(generateCode(automaton));
+            };
+
+            cntrl.drawAutomaton();
         }
 
         function fetchLatexRenderedPng(count) {

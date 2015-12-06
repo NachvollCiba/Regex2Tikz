@@ -3,9 +3,6 @@
  */
 
 function convertToTikz(nfa) {
-    var tikz  = "\\usetikzlibrary{automata, positioning}\n";
-    tikz += "\\begin{tikzpicture}\n";
-
     // initialize additional state attributes
     nfa.forEach(function (state) {
         state.freeDirs = ["below", "right", "above"];
@@ -16,6 +13,12 @@ function convertToTikz(nfa) {
     });
 
     layoutAut(nfa);
+    return generateCode(nfa);
+}
+
+function generateCode(nfa) {
+    var tikz  = "\\usetikzlibrary{automata, positioning}\n";
+    tikz += "\\begin{tikzpicture}\n";
 
     // sort the states by name
     var sortedNFA = nfa.sort(function (item1, item2) {
@@ -162,7 +165,7 @@ function generateTransitionsCode(state) {
         result += "\$} ()\n";
     }
 
-    return result + "\n";
+    return result;
 }
 
 function toInternalID(name) {
