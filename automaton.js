@@ -14,7 +14,6 @@ function nfa2dfa(nfa, alphabet, withSink) {
     // build the eps-closure of the start state
     var startClosure = epsClosure(nfa[0]);
     var newStart = new State(potStateName(startClosure[0]), true, startClosure[1]);
-    console.log("Epsilon-closure of start state: " + newStart.name + "," + newStart.isFinal);
     var dfa = [newStart];
 
     var stack = []; // stack of state sets to work on
@@ -25,7 +24,6 @@ function nfa2dfa(nfa, alphabet, withSink) {
 
     while (stack.length > 0) {
         var next = stack.shift();
-        console.log("Doing state " + next[1]);
 
         for (var symb of alphabet) {
             var symbConnected = new Set();
@@ -33,10 +31,9 @@ function nfa2dfa(nfa, alphabet, withSink) {
 
             // collect all states that are connected with the alphabet symbol
             for (var curState of next[0]) {
-                isFinal |= curState.isFinal;
-                console.log("Added state " + curState.name + ", isFinal: " + isFinal);
 
                 curState.nextStates(symb).forEach(function (nextState) {
+                    isFinal |= nextState.isFinal;
                     symbConnected.add(nextState);
                 });
             }
@@ -66,7 +63,6 @@ function nfa2dfa(nfa, alphabet, withSink) {
                     potState = potStates.get(stateName);
                 } else {
                     potState = new State(stateName, false, isFinal);
-                    console.log("Created new State: " + potState.name + ", " + potState.isFinal);
                     stack.push([symbConnected, stateName]);
                     potStates.set(stateName,potState);
                     dfa.push(potState);
