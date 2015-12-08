@@ -10,11 +10,20 @@
     <script src="autCanvas.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
     <script src="lib/jquery.mousewheel.min.js"></script>
-    <script src="lib/tooltip.js"></script> <? tooltip.js from bootstrap ?>
+    <!-- Bootstrap javascript and css-->
+    <link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap.min.css">
+    <!--<link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap-theme.min.css">-->
+    <script src="lib/bootstrap-3.3.6/js/bootstrap.min.js"></script>
+
     <script type="text/javascript">
-        // initialize tooltips
+        var elemData = new Map(); // contains additional data for each id
+        // initialization
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()
+
+            elemData.set("nfa", {initialized:false, canvasCntrl:null});
+            elemData.set("dfa", {initialized:false, canvasCntrl:null});
+            elemData.set("minDfa", {initialized:false, canvasCntrl:null});
         });
 
         function submit() {
@@ -33,7 +42,7 @@
                 if ($("#showNFA").is(":checked")) {
                     console.log("Creating HTML elements for the nfa");
                     $("#nfaDiv").show();
-                    fillResult($("#innerNFA"), nfa);
+                    fillResult($("#nfa"), nfa);
                 } else {
                     $("#nfaDiv").hide();
                 }
@@ -41,14 +50,14 @@
                 if ($("#showDFA").is(":checked")) {
                     console.log("Creating HTML elements for the powerset dfa");
                     $("#dfaDiv").show();
-                    fillResult($("#innerDFA"), dfa);
+                    fillResult($("#dfa"), dfa);
                 } else {
                     $("#dfaDiv").hide();
                 }
 
 
                 console.log("Creating HTML elements for the minimal dfa");
-                fillResult($("#innerMinDFA"), minDFA);
+                fillResult($("#minDfa"), minDFA);
 
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
@@ -71,56 +80,63 @@
             }
         }
 
-        var counter = 0;
-        var canvasCntrl = new Map(); //
+
         function fillResult(elem, automaton) {
-            if (elem.children().length === 0) { // create all the elements
-                var canvas = $("<canvas></canvas>").attr("width", "500").attr("height", "500").addClass("stateCanvas");
-                var tikzDispl = $("<textarea></textarea>").attr("rows", "20")
-                        .attr("id", "tikzCode" + counter).attr("cols", "60");//.attr("disabled", "true");
-                var renderImg = $("<img/>").attr("id", "renderImg" + counter).attr("src", "");
-                var id = counter + "";
-                var renderButton = $("<input>").attr("type", "button")
-                        .addClass("renderBtn").attr("id", "renderBtn" + counter).val("Render again")
-                        .click(function () {
-                            fetchLatexRenderedPng(id)
-                        });
+            var id = elem.attr("id");
+            data = elemData.get(id);
 
-                elem.append(canvas);
-                var controller = new CanvasController(canvas, automaton);
-                canvasCntrl.set(id, controller);
+            console.log(id);
 
-                elem.append($("<h3>TIKZ Code</h3>")).append(tikzDispl).append($("<br>"));
-                elem.append(renderButton).append($("<br>"));
-                elem.append(renderImg);
+            if (!data.initialized) {
+                if (id != "minDfa") {// create the elements by cloning the min dfa prototype
+                    var cloned = $("#minDfa").clone().attr("id", id);
 
-                counter++;
+                    // adjust ids and references
+                    cloned.find("#latex_minDfa").attr("id", "latex_" + id);
+                    cloned.find("#latextab_minDfa").attr("id", "latextab_"+id).attr("href", "#latex_"+id);
+
+                    cloned.find("#structure_minDfa").attr("id", "structure_" + id);
+                    cloned.find("#structuretab_minDfa").attr("id", "structuretab_"+id).attr("href", "#structure_"+id);
+
+                    elem.replaceWith(cloned);
+                    elem = cloned;
+                }
+
+                // initialize the controller for this automaton's canvas
+                var canvas = elem.find("canvas");
+                data.canvasCntrl = new CanvasController(canvas, automaton);
+
+                // bind the function for the render button
+                var renderBtn = elem.find(":button");
+                var tikzDispl = elem.find("textarea");
+                var renderImg = elem.find("img");
+                renderBtn.click(function(event) {
+                    console.log("clicked!");
+                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+                });
+
+                data.initialized = true;
             } else { // find all the (existing) elements
-                canvas = elem.find("canvas");
                 tikzDispl = elem.find("textarea");
                 renderImg = elem.find("img");
-                var id = renderImg.attr("id").replace(/^renderImg/, "");
+                renderBtn = elem.find("button");
             }
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
-            fetchLatexRenderedPng(id);
+            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
 
             // update the canvas
-            var cntrl = canvasCntrl.get(id);
+            var cntrl = data.canvasCntrl;
             cntrl.automaton = automaton;
-            controller.changelistener = function(state) {
+            cntrl.changelistener = function(state) {
                 tikzDispl.val(generateCode(automaton));
             };
 
             cntrl.drawAutomaton();
         }
 
-        function fetchLatexRenderedPng(count) {
-            var button = $("#renderBtn" + count);
-            var img = $("#renderImg" + count);
-            var tikz = $("#tikzCode" + count).val();
-
+        function fetchLatexRenderedPng(tikz, img, button) {
             button.prop("disabled", true);
             img.attr("src", "loading.gif").attr("width", "128");
 
@@ -147,7 +163,7 @@
         }
     </script>
 </head>
-<body>
+
 <h1>Regex2Tikz</h1>
 <em>A simple tool for converting a regular expression into TIKZ code for its corresponding automatons.</em>
 <p>
@@ -186,10 +202,6 @@
     automatons">
         <input type="checkbox" id="generateSink">Generate sink state
     </span><br>
-    <span data-toggle="tooltip" data-placement="right" title="Each alphanumeric character entered will be used
-    as an alphabet symbol (e.g. 'abc, d' -> {a,b,c,d})">
-        Alphabet <input type="text" id="alphabet" value="" disabled>
-    </span><br>
     <span data-toggle="tooltip" data-placement="right" title="Generate the nondeterministic automaton that is directly
     generated from the regular expression">
         <input type="checkbox" id="showNFA" checked> Also show NFA
@@ -202,28 +214,46 @@
 
     <hr width="75%">
 </div>
-</p>
-
 
 <div hidden id="result" width="100%">
     <div class="group" id="nfaDiv">
         <h2 id="nfaHeader" class="linked"
             onclick="revealElem($('#innerNFA'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
             Resulting NFA &#x25BC;</h2>
-        <div hidden id="innerNFA"></div></div>
+        <div hidden id="nfa"></div></div>
 
     <div class="group" id="dfaDiv">
         <h2 id="dfaHeader" class="linked"
             onclick="revealElem($('#innerDFA'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
             Non-minimal powerset DFA &#x25BC;</h2>
-        <div hidden id="innerDFA"></div></div>
+        <div hidden id="dfa"></div></div>
 
     <div class="group" id="minDFADiv">
         <h2 id="minDFAHeader" class="linked"
             onclick="revealElem($('#innerMinDFA'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
             Minimized DFA &#x25BC;</h2>
 
-        <div hidden id="innerMinDFA"></div>
+        <div id="minDfa">
+            <textarea rows="20" cols="60" disabled></textarea>
+            <ul class="nav nav-tabs">
+                <li class="active">
+                    <a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX - rendered</a>
+                </li>
+                <li>
+                    <a href="#structure_minDfa" data-toggle="tab" id="structuretab_minDfa">Edit Structure</a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="latex_minDfa">
+                    <img src=""/> <br>
+                    <input type="button" class="renderBtn" value="Render again...">
+                </div>
+                <div class="tab-pane" id="structure_minDfa">
+                    <canvas width="500" height="500" class="stateCanvas"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
