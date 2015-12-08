@@ -61,6 +61,10 @@ function CanvasController(canvas, automaton) {
     this.canvasMouseUp = function(event) {
         event.preventDefault();
 
+        if ((selected instanceof State) && cntrl.changelistener != null) {
+            cntrl.changelistener(selected);
+        }
+
         selected = null;
     };
 
@@ -97,9 +101,7 @@ function CanvasController(canvas, automaton) {
                 selected.position[0] += deltaX / cntrl.camera.zoom;
                 selected.position[1] -= deltaY / cntrl.camera.zoom;
 
-                if (cntrl.changelistener != null) {
-                    cntrl.changelistener(selected);
-                }
+                // TODO live editing of the tikz code
             } else { // move the camera
                 cntrl.camera.x += deltaX;
                 cntrl.camera.y += deltaY;

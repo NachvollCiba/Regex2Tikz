@@ -19,7 +19,7 @@
         var elemData = new Map(); // contains additional data for each id
         // initialization
         $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
+            $('[data-toggle="tooltip"]').tooltip();
 
             elemData.set("nfa", {initialized:false, canvasCntrl:null});
             elemData.set("dfa", {initialized:false, canvasCntrl:null});
@@ -29,6 +29,7 @@
         function submit() {
             var regex = $("#regex").val();
             try {
+                // parse the regex and create the automatons
                 var parser = new RegexParser(regex);
                 console.log("Compiling regular expression to nfa");
                 var nfa = parser.parse();
@@ -37,8 +38,8 @@
                 console.log("Minimizing DFA");
                 var minDFA = minimize(dfa);
 
+                // adjust the DOM to show the resulting automatons
                 $("#result").show();
-
                 if ($("#showNFA").is(":checked")) {
                     console.log("Creating HTML elements for the nfa");
                     $("#nfaDiv").show();
@@ -55,14 +56,17 @@
                     $("#dfaDiv").hide();
                 }
 
-
                 console.log("Creating HTML elements for the minimal dfa");
                 fillResult($("#minDfa"), minDFA);
 
+                // fill the statistics div
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
+                $("#statistics").show();
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
                 $("#simpleRegexDisplay").text(parser.simpleInput);
+                $("#origRegexDisplay").text(parser.origInput);
+                $("#autSizeDisplay").text(minDFA.length);
             } catch (e) {
                 console.log("An exception occured");
                 console.log(e);
@@ -92,6 +96,9 @@
                     var cloned = $("#minDfa").clone().attr("id", id);
 
                     // adjust ids and references
+                    cloned.find("#tikz_minDfa").attr("id", "tikz_"+id);
+                    cloned.find("#tikztab_minDfa").attr("id", "tikztab_"+id).attr("href", "#tikz_"+id);
+
                     cloned.find("#latex_minDfa").attr("id", "latex_" + id);
                     cloned.find("#latextab_minDfa").attr("id", "latextab_"+id).attr("href", "#latex_"+id);
 
@@ -111,7 +118,6 @@
                 var tikzDispl = elem.find("textarea");
                 var renderImg = elem.find("img");
                 renderBtn.click(function(event) {
-                    console.log("clicked!");
                     fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
                 });
 
@@ -164,6 +170,9 @@
     </script>
 </head>
 
+
+
+<body style="text-align: center">
 <h1>Regex2Tikz</h1>
 <em>A simple tool for converting a regular expression into TIKZ code for its corresponding automatons.</em>
 <p>
@@ -214,29 +223,53 @@
 
     <hr width="75%">
 </div>
-
+<div hidden id="statistics" class="group" style="text-align:center">
+    <h4>Statistics</h4>
+    <hr width="50%">
+    <table>
+        <tr>
+            <td class="left">Original expression: </td>
+            <td id="origRegexDisplay" class="right"></td>
+        </tr>
+        <tr>
+            <td class="left">Simplified expression: </td>
+            <td id="simpleRegexDisplay" class="right"></td>
+        </tr>
+        <tr>
+            <td class="left">Alphabet: </td>
+            <td id="alphDisplay" class="right"></td>
+        </tr>
+        <tr>
+            <td class="left">Size of the minimal automaton: </td>
+            <td class="right"> <span id="autSizeDisplay"></span> states</td>
+        </tr>
+    </table>
+</div>
 <div hidden id="result" width="100%">
     <div class="group" id="nfaDiv">
         <h2 id="nfaHeader" class="linked"
-            onclick="revealElem($('#innerNFA'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
+            onclick="revealElem($('#nfa'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
             Resulting NFA &#x25BC;</h2>
         <div hidden id="nfa"></div></div>
 
     <div class="group" id="dfaDiv">
         <h2 id="dfaHeader" class="linked"
-            onclick="revealElem($('#innerDFA'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
+            onclick="revealElem($('#dfa'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
             Non-minimal powerset DFA &#x25BC;</h2>
         <div hidden id="dfa"></div></div>
 
     <div class="group" id="minDFADiv">
         <h2 id="minDFAHeader" class="linked"
-            onclick="revealElem($('#innerMinDFA'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
+            onclick="revealElem($('#minDfa'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
             Minimized DFA &#x25BC;</h2>
 
-        <div id="minDfa">
-            <textarea rows="20" cols="60" disabled></textarea>
+        <div hidden id="minDfa">
+            <hr width="90%">
             <ul class="nav nav-tabs">
                 <li class="active">
+                    <a href="#tikz_minDfa" data-toggle="tab" id="tikztab_minDfa">TIKZ Code</a>
+                </li>
+                <li>
                     <a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX - rendered</a>
                 </li>
                 <li>
@@ -245,19 +278,20 @@
             </ul>
 
             <div class="tab-content">
-                <div class="tab-pane active" id="latex_minDfa">
-                    <img src=""/> <br>
-                    <input type="button" class="renderBtn" value="Render again...">
+                <div class="tab-pane active" id="tikz_minDfa">
+                    <textarea rows="20" cols="60" disabled class="autDisplay"></textarea>
+                </div>
+                <div class="tab-pane" id="latex_minDfa">
+                    <img src="" class="autDisplay"/> <br>
+                    <!--<input type="button" class="renderBtn" value="Render again...">-->
+                    <button type="button" class="btn btn-primary">Render again...</button>
                 </div>
                 <div class="tab-pane" id="structure_minDfa">
-                    <canvas width="500" height="500" class="stateCanvas"></canvas>
+                    <canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
                 </div>
             </div>
         </div>
     </div>
-
-    <h4>Alphabet of the regular expression: <span id="alphDisplay"></span></h4>
-    <h4>Simplified expression: <span id="simpleRegexDisplay"></span></h4>
 </div>
 </body>
 </html>

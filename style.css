@@ -14,6 +14,10 @@ body {
     text-align: left;
 }
 
+.right {
+    text-align: right;
+}
+
 .linked:hover {
     cursor: pointer;
     color: brown;
@@ -27,8 +31,34 @@ body {
     border: solid 1px black;
 }
 
-.renderBtn {
-    margin: 10px;
+.autDisplay {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.btn-primary {
+    color: cadetblue;
+    border-radius: 10px;
+}
+
+.nav-tabs > li > a {
+    background-color: #eeeeee;
+    color: cadetblue;
+    -webkit-border-radius: 0px !important;
+    -moz-border-radius: 0px !important;
+    border-radius: 0px !important;
+    margin-right:0px !important;
+    margin-left:2px !important;
+}
+
+.nav-tabs > li > a:hover {
+    background-color: brown !important;
+    color: white !important;
+}
+
+.nav-tabs > li.active > a{
+    color: brown !important;
+    background-color: white !important;
 }
 
 .resultHead {
