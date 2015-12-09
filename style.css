@@ -1,7 +1,7 @@
 body {
-    text-align: center;
+    text-align: center !important;
     width: 600px;
-    margin:auto;
+    margin:auto !important;
 }
 
 .group{
@@ -18,9 +18,15 @@ body {
     text-align: right;
 }
 
-.linked:hover {
-    cursor: pointer;
-    color: brown;
+.spoilerLink {
+    color: black !important;
+    text-decoration: none !important;
+}
+
+.spoilerLink:hover {
+    cursor: pointer !important;
+    color: brown !important;
+    text-decoration: none !important;
 }
 
 .noscroll {

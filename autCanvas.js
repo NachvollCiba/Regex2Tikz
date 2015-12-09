@@ -7,10 +7,11 @@ const ZOOM_STEP = 1;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
 
-function CanvasController(canvas, automaton) {
+function CanvasController(canvas, automaton, controlElem) {
     // class member
     this.canvas = canvas;
     this.automaton = automaton;
+    this.control = controlElem;
     this.camera = {zoom:40, x:this.canvas[0].width/2, y:this.canvas[0].height/2};
     this.changelistener = null;
 
@@ -28,7 +29,10 @@ function CanvasController(canvas, automaton) {
             ctx.beginPath();
             ctx.arc(posX, posY, STATE_RAD * this.camera.zoom, 0, 2 * Math.PI);
             ctx.stroke();
-            ctx.moveTo(posX, posY);
+
+            // set font and draw automaton name
+            //var fontsize = 10 * camera.zoom;
+            //ctx.fontsize(fontsize);
             ctx.fillText(state.name, posX, posY);
 
             for (var symb in state.transitions) {
@@ -50,6 +54,18 @@ function CanvasController(canvas, automaton) {
                 }
             }
         }
+    };
+
+    this.zoomIn = function(amount) {
+        this.camera.zoom += amount;
+        this.camera.zoom = Math.min(this.camera.zoom, ZOOM_MAX);
+        this.drawAutomaton();
+    };
+
+    this.zoomOut = function(amount) {
+        this.camera.zoom -= amount;
+        this.camera.zoom = Math.max(this.camera.zoom, 0);
+        this.drawAutomaton();
     };
 
 
@@ -116,14 +132,11 @@ function CanvasController(canvas, automaton) {
 
     this.canvasMouseWheel = function(event) {
         if (event.originalEvent.wheelDelta > 0 || event.originalEvent.detail < 0) {
-            cntrl.camera.zoom += ZOOM_STEP;
+            cntrl.zoomIn(ZOOM_STEP);
         }
         else {
-            cntrl.camera.zoom -= ZOOM_STEP;
+            cntrl.zoomOut(ZOOM_STEP)
         }
-
-        cntrl.camera.zoom = Math.min(Math.max(cntrl.camera.zoom, 0), ZOOM_MAX);
-        cntrl.drawAutomaton();
     };
 
     this.canvasMouseEnter = function(event) {
@@ -141,4 +154,14 @@ function CanvasController(canvas, automaton) {
     this.canvas.mouseenter(this.canvasMouseEnter);
     this.canvas.mouseleave(this.canvasMouseExit);
     this.canvas.bind('mousewheel DOMMouseScroll', this.canvasMouseWheel);
+
+    // register listeners for the control panel
+    this.control.find("#btnZoomIn").click(function(event) {
+        cntrl.zoomIn(3*ZOOM_STEP);
+    });
+
+    this.control.find("#btnZoomOut").click(function(event) {
+        cntrl.zoomOut(3*ZOOM_STEP);
+    });
+
 }
