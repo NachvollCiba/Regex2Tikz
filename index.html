@@ -75,20 +75,19 @@
         }
 
         function revealElem(elem, anchor, showText, hideText) {
-            if (elem.hasClass("in")) {
-                anchor.find("a").text(showText);
-            } else {
-                anchor.find("a").text(hideText);
-            }
             elem.collapse("toggle" );
+
+            if (elem.attr("aria-expanded") == "true") {
+                anchor.text(hideText);
+            } else {
+                anchor.text(showText);
+            }
         }
 
 
         function fillResult(elem, automaton) {
             var id = elem.attr("id");
             data = elemData.get(id);
-
-            console.log(id);
 
             if (!data.initialized) {
                 if (id != "minDfa") {// create the elements by cloning the min dfa prototype
@@ -110,7 +109,7 @@
 
                 // initialize the controller for this automaton's canvas
                 var canvas = elem.find("canvas");
-                data.canvasCntrl = new CanvasController(canvas, automaton, elem.find("#canvasControl"));
+                data.canvasCntrl = new CanvasController(canvas, automaton, elem.find(".canvasControl"));
 
                 // bind the function for the render button
                 var renderBtn = elem.find(":button");
@@ -118,6 +117,11 @@
                 var renderImg = elem.find("img");
                 renderBtn.click(function(event) {
                     fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+                });
+
+                // add listener for scrolling on reveal
+                elem.on("shown.bs.collapse", function() {
+                   window.scroll(0, $("#"+id + "Div").offset().top);
                 });
 
                 data.initialized = true;
@@ -238,23 +242,23 @@
         </tr>
     </table>
 </div>
-<div hidden id="result" width="100%">
+<div hidden id="result">
     <div class="group" id="nfaDiv">
-        <h2 id="nfaHeader" class="linked"
+        <h2 id="nfaHeader" class="spoilerLink"
             onclick="revealElem($('#nfa'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
-            <a href="#nfaHeader" class="spoilerLink">Resulting NFA &#x25BC;</a></h2>
+            Resulting NFA &#x25BC;</h2>
         <div id="nfa" class="collapse"></div></div>
 
     <div class="group" id="dfaDiv">
-        <h2 id="dfaHeader"
+        <h2 id="dfaHeader" class="spoilerLink"
             onclick="revealElem($('#dfa'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
-            <a href="#dfaHeader" class="spoilerLink">Non-minimal powerset DFA &#x25BC;</a></h2>
+            Non-minimal powerset DFA &#x25BC;</h2>
         <div id="dfa" class="collapse"></div></div>
 
-    <div class="group" id="minDFADiv">
-        <h2 id="minDFAHeader" class="linked"
+    <div class="group" id="minDfaDiv">
+        <h2 id="minDfaHeader" class="spoilerLink"
             onclick="revealElem($('#minDfa'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
-            <a href="#minDFAHeader" class="spoilerLink">Minimized DFA &#x25BC;</a></h2>
+            Minimized DFA &#x25BC;</h2>
 
         <div id="minDfa" class="collapse">
             <hr width="90%">
@@ -280,7 +284,7 @@
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
                 </div>
                 <div class="tab-pane" id="structure_minDfa">
-                    <div class="left" id="canvasControl"><span>
+                    <div class="left canvasControl"><span>
                         <input type="checkbox" id="cbGrid"> Show Grid</span>
                         <button type="button" class="btn btn-default" id="btnZoomIn">+</button>
                         <button type="button" class="btn btn-default" id="btnZoomOut">-</button>
@@ -290,8 +294,8 @@
             </div>
         </div>
     </div>
-</div>
 
+</div>
 <!-- datalists -->
 <datalist id="emptyWordList">
     <option value="\varepsilon">&epsilon;</option>

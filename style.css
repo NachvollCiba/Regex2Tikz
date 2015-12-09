@@ -33,6 +33,10 @@ body {
     overflow: hidden;
 }
 
+.canvasControl {
+    margin-top: 5px;
+}
+
 .stateCanvas {
     border: solid 1px black;
 }

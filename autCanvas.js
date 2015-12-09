@@ -18,8 +18,13 @@ function CanvasController(canvas, automaton, controlElem) {
     // class methods
     this.drawAutomaton = function() {
         var ctx = this.canvas[0].getContext("2d");
-
         ctx.clearRect(0, 0, this.canvas[0].width, this.canvas[0].height);
+
+        var fontsize = .5 * this.camera.zoom;
+        ctx.font = fontsize + "px Arial";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+
+        var realRad = STATE_RAD * this.camera.zoom;
 
         for (var i = 0; i < this.automaton.length; i++) {
             var state = this.automaton[i];
@@ -27,12 +32,9 @@ function CanvasController(canvas, automaton, controlElem) {
             var posY = -state.position[1] * this.camera.zoom + this.camera.y;
 
             ctx.beginPath();
-            ctx.arc(posX, posY, STATE_RAD * this.camera.zoom, 0, 2 * Math.PI);
+            ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
             ctx.stroke();
 
-            // set font and draw automaton name
-            //var fontsize = 10 * camera.zoom;
-            //ctx.fontsize(fontsize);
             ctx.fillText(state.name, posX, posY);
 
             for (var symb in state.transitions) {
@@ -42,8 +44,13 @@ function CanvasController(canvas, automaton, controlElem) {
                     var otherX =  nextStates[j].position[0] * this.camera.zoom + this.camera.x;
                     var otherY = -nextStates[j].position[1] * this.camera.zoom + this.camera.y;
 
-                    ctx.moveTo(posX, posY);
-                    ctx.lineTo(otherX, otherY);
+                    var dir = unitVector(vecDifference(nextStates[j].position, state.position));
+
+                    var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
+                    var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
+
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(endX, endY);
                     ctx.stroke();
 
                     var midX = (posX + (otherX - posX) / 2);
