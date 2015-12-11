@@ -4,6 +4,24 @@ body {
     margin:auto !important;
 }
 
+td {
+    padding-top: 2px !important;
+    padding-right: 7px !important;
+}
+
+table {
+    margin: auto;
+    text-align:center;
+}
+
+label {
+    font-weight: 100 !important;
+}
+
+input:disabled+label {
+    color:#ccc;
+}
+
 .group{
     margin: 5px;
     padding: 3px;
@@ -94,6 +112,16 @@ body {
     padding: 4px;
 }
 
+#options {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#options > table {
+    width: 100%;
+    margin: 10px;
+}
+
 #optionShowHide {
-    text-align:left;
+    font-size: 12pt;
 }

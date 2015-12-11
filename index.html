@@ -24,6 +24,12 @@
             elemData.set("nfa", {initialized:false, canvasCntrl:null});
             elemData.set("dfa", {initialized:false, canvasCntrl:null});
             elemData.set("minDfa", {initialized:false, canvasCntrl:null});
+
+            $("#statePrefix").on("input", function(event) {
+                var prefixEmpty = $("#statePrefix").val().trim() == "";
+                console.log(prefixEmpty);
+                $("#cbIndexSubscript").prop("disabled", prefixEmpty);
+            });
         });
 
         function submit() {
@@ -188,32 +194,39 @@
 
     <hr width="75%">
 
-    <span id="optionShowHide"
-          onclick="revealElem($('#options'), $('#optionShowHide'), 'Show options', 'Hide options');">
-        <a href="#" class="spoilerLink">Show options</a></span>
+    <span id="optionShowHide" class="spoilerLink"
+          onclick="revealElem($('#options'), $('#optionShowHide'), '[+] Show options', '[-] Hide options');">
+        [+] Show options
+    </span>
 
     <div id="options" class="collapse left">
         <table><tbody>
             <tr>
                 <td class="left">Symbol to use for the empty word: </td>
-                <td class="left"><input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"></td>
+                <td class="left" colspan="2"><input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"></td>
             </tr>
             <tr data-toggle="tooltip" data-placement="right" title="Specifiy a prefix to apply to each state label (e.g.,
     if you write 'q' then the states will be named q0, q1, ...)">
                 <td class="left">State name prefix: </td>
                 <td class="left"><input type="text" id="statePrefix" value=""></td>
+                <td class="left">
+                    <input type="checkbox" id="cbIndexSubscript" disabled checked>
+                    <label for="cbIndexSubscript">Index as subscript</label>
+                </td>
             </tr>
-            <tr data-toggle="tooltip" data-placement="right" title="Explicitly generate a sink state in deterministic
-    automatons">
-                <td class="left" colspan="2"><input type="checkbox" id="generateSink">Generate sink state</td>
+            <tr>
+                <td class="left">Start numbering at: </td>
+                <td class="left" colspan="2"><input type="number" id="numberStart" value="0"></td>
             </tr>
-            <tr data-toggle="tooltip" data-placement="right" title="Generate the nondeterministic automaton that is directly
-    generated from the regular expression">
-                <td class="left"><input type="checkbox" id="showNFA" checked> Also show NFA</td>
+            <tr>
+                <td style="padding-top:15px !important" class="left" colspan="1">
+                    <input type="checkbox" id="showNFA" checked>
+                    <label for="showNFA">Also show NFA</label>
+                </td>
+                <td style="padding-top:15px !important" class="left" colspan="2"><label><input type="checkbox" id="showDFA" checked> Also show non-minimal powerset DFA</label></td>
             </tr>
-            <tr data-toggle="tooltip" data-placement="right" title="Generate the deterministic powerset automaton before the
-    minimization process">
-                <td class="left"><input type="checkbox" id="showDFA" checked> Also show non-minimal powerset DFA</td>
+            <tr>
+                <td class="left" colspan="3"><label><input type="checkbox" id="generateSink">Generate sink state</label></td>
             </tr>
         </tbody></table>
     </div>
@@ -226,19 +239,19 @@
     <table>
         <tr>
             <td class="left">Original expression: </td>
-            <td id="origRegexDisplay" class="right"></td>
+            <td id="origRegexDisplay" class="left"></td>
         </tr>
         <tr>
             <td class="left">Simplified expression: </td>
-            <td id="simpleRegexDisplay" class="right"></td>
+            <td id="simpleRegexDisplay" class="left"></td>
         </tr>
         <tr>
             <td class="left">Alphabet: </td>
-            <td id="alphDisplay" class="right"></td>
+            <td id="alphDisplay" class="left"></td>
         </tr>
         <tr>
             <td class="left">Size of the minimal automaton: </td>
-            <td class="right"> <span id="autSizeDisplay"></span> states</td>
+            <td class="left"> <span id="autSizeDisplay"></span> states</td>
         </tr>
     </table>
 </div>

@@ -171,7 +171,7 @@ function minimize(dfa) {
                     if (eqNext.length > 0) {
                         next = next[0];
                         eqNext = eqNext[0];
-                        if (!eqStatesMap.get(next).has(eqNext)) {
+                        if (!eqStatesMap .get(next).has(eqNext)) {
                             eqStates.delete(eqState);
                             eqStatesMap.get(eqState).delete(state);
                             changed = true;
@@ -232,9 +232,17 @@ function minimize(dfa) {
 }
 
 function renameStates(states) {
-    var prefix = $("#statePrefix").val();
-    for (var i = 0; i < states.length; i++) {
-        states[i].name = prefix + i;
+    var prefix = $("#statePrefix").val().trim();
+    var startNum = parseInt($("#numberStart").val());
+
+    if ($("#cbIndexSubscript").is(":checked") && prefix != "") {
+        for (var i = 0; i < states.length; i++) {
+            states[i].name = prefix + "_{" + (i + startNum) + "}";
+        }
+    } else {
+        for (var i = 0; i < states.length; i++) {
+            states[i].name = prefix + (i + startNum);
+        }
     }
 }
 

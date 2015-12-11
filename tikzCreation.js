@@ -46,7 +46,7 @@ function generateStateCode(state) {
     var accepting = state.isFinal? ",accepting":"";
     var start = state.isStart? ",initial":"";
     return "\\node[state" + accepting + start + "] (" +toInternalID(name) +
-        ") at (" + state.position[0].toFixed(2) + "," + state.position[1].toFixed(2) + ") {" + name + "};";
+        ") at (" + state.position[0].toFixed(2) + "," + state.position[1].toFixed(2) + ") {$" + name + "$};";
 }
 
 function generateTransitionsCode(state) {
@@ -168,8 +168,13 @@ function generateTransitionsCode(state) {
     return result;
 }
 
+// TODO put all things in one regex (efficiency)
 function toInternalID(name) {
-    return name.toString().replace(/\s/g, "").replace(",",""); // remove all whitespace and punctuation;
+    return name.toString()
+        .replace(/\s/g, "") // remove whitespace,
+        .replace(",","").replace(".","") // punctuation
+        .replace("{","").replace("}","") // brackets
+        .replace("_",""); // and underscores
 }
 
 

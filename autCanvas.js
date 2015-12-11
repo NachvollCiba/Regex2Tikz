@@ -35,7 +35,7 @@ function CanvasController(canvas, automaton, controlElem) {
             ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
             ctx.stroke();
 
-            ctx.fillText(state.name, posX, posY);
+            ctx.fillText(toInternalID(state.name), posX, posY);
 
             for (var symb in state.transitions) {
                 var nextStates = state.transitions[symb];
