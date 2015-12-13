@@ -144,6 +144,7 @@
             // update the canvas
             var cntrl = data.canvasCntrl;
             cntrl.automaton = automaton;
+            cntrl.initialize();
             cntrl.changelistener = function(state) {
                 tikzDispl.val(generateCode(automaton));
             };
@@ -188,7 +189,7 @@
 <div class="group" id="input">
     <div id="inputInner">
         <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div><br>
-        <input type="text" id="regex" placeholder="e.g. (a|b)*c" autofocus class="inputElement" list="regexList"><br>
+        <input type="text" id="regex" value="abc" autofocus class="inputElement" list="regexList"><br> <!-- replace value with placeholder="(a|b)*c" in release-->
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
 
