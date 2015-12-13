@@ -7,7 +7,7 @@ const ZOOM_STEP = 1;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
 const SNAP_RAD = .25;
-const LBL_OFFSET = .3;
+const LBL_OFFSET = .1;
 
 function CanvasController(canvas, automaton, controlElem) {
     // class member
@@ -128,6 +128,7 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         ctx.fillStyle = "#000000";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(toInternalID(state.name), posX, posY);
     };
 
@@ -174,14 +175,18 @@ function CanvasController(canvas, automaton, controlElem) {
             switch(entry[1].placement) {
                 case "above":
                     midY -= offset;
+                    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
                     break;
                 case "below":
+                    ctx.textAlign = "center"; ctx.textBaseline = "top";
                     midY += offset;
                     break;
                 case "left":
+                    ctx.textAlign = "right"; ctx.textBaseline = "middle";
                     midX -= offset;
                     break;
                 case "right":
+                    ctx.textAlign = "left"; ctx.textBaseline = "middle";
                     midX += offset;
                     break;
             }
@@ -264,6 +269,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
                 lblPos = [x, mid[1] - lblOffset];
+                ctx.textAlign = "center"; ctx.textBaseline = "bottom";
                 break;
             case "below":
                 start = downRight; end = downLeft;
@@ -271,6 +277,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
                 lblPos = [x, mid[1] + lblOffset];
+                ctx.textAlign = "center"; ctx.textBaseline = "top";
                 break;
             case "left":
                 start = downLeft; end = upLeft;
@@ -278,6 +285,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
                 lblPos = [mid[0] - lblOffset, y];
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
                 break;
             case "right":
                 start = upRight; end = downRight;
@@ -285,6 +293,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [mid[0], y - loopExc];
                 control2 = [mid[0], y + loopExc];
                 lblPos = [mid[0] + lblOffset, y];
+                ctx.textAlign = "left"; ctx.textBaseline = "middle";
                 break;
         }
 
