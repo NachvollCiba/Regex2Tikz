@@ -143,8 +143,7 @@
 
             // update the canvas
             var cntrl = data.canvasCntrl;
-            cntrl.automaton = automaton;
-            cntrl.initialize();
+            cntrl.loadAutomaton(automaton);
             cntrl.changelistener = function(state) {
                 tikzDispl.val(generateCode(automaton));
             };

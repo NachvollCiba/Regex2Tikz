@@ -15,17 +15,16 @@ function CanvasController(canvas, automaton, controlElem) {
     this.control = controlElem;
     this.camera = {zoom:40, x:this.canvas[0].width/2, y:this.canvas[0].height/2};
     this.changelistener = null;
-    this.spatial = {xMap: new Map(), yMap: new Map()};
+    this.spatial = null;
     this.moving = null;
     this.xAligned = null;
     this.yAligned = null;
     this.showGrid = false;
     this.snap = false;
 
-    // class methods
 
-    this.initialize = function() {
-        // build the spatial data structure
+    this.loadAutomaton = function(aut) {
+        this.automaton = aut;
         this.buildSpatial();
 
         this.snap = this.control.find("#cbAlign").is(":checked");
@@ -184,10 +183,11 @@ function CanvasController(canvas, automaton, controlElem) {
 
     // center both automaton and camera around 0,0
     this.center = function() {
+        // center camera
         this.camera.x = this.canvas[0].width / 2;
         this.camera.y = this.canvas[0].height / 2;
 
-
+        // center states
         var offsetX = 0; var offsetY = 0;
         this.automaton.forEach(function(state) {
             offsetX += state.position[0];
@@ -196,12 +196,15 @@ function CanvasController(canvas, automaton, controlElem) {
 
         offsetX /= this.automaton.length;
         offsetY /= this.automaton.length;
+        var that = this;
         this.automaton.forEach(function(state) {
             state.position[0] -= offsetX;
             state.position[1] -= offsetY;
+            that.updateStateSpatial(state);
         });
 
         this.drawAutomaton();
+        cntrl.changelistener(selected);
     };
 
 
@@ -276,7 +279,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 var dis = Math.abs(state.position[1] - other.position[1]);
 
                 if (dis < minDis) {
-                    minDis = dis;
+                    minDis = dis;automaton =
                     minState = other;
                 }
             }
@@ -327,6 +330,8 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.buildSpatial = function() {
+        this.spatial = {xMap: new Map(), yMap: new Map()};
+
         for (var i = 0; i < this.automaton.length; i++) {
             this.updateStateSpatial(this.automaton[i]);
         }
@@ -336,21 +341,35 @@ function CanvasController(canvas, automaton, controlElem) {
     var cntrl = this;
     var selected = null;
     var lastMouse = {x:-1, y:-1};
+    var locked = {x: false, y:false};
+    var accDelta = {x:0, y:0};
 
-    this.canvasMouseUp = function(event) {
-        event.preventDefault();
-
+    function reset() {
         if ((selected instanceof State) && cntrl.changelistener != null) {
             cntrl.changelistener(selected);
         }
+
+        selected = null;
 
         cntrl.moving = null;
         cntrl.xAligned = null;
         cntrl.yAligned = null;
 
-        selected = null;
+        locked.x = false; locked.y = false;
+        accDelta.x = 0; accDelta.y = 0;
+
         cntrl.drawAutomaton();
+    }
+
+    this.canvasMouseUp = function(event) {
+        event.preventDefault();
+        reset();
     };
+
+    function findAligned(state) {
+        cntrl.xAligned = cntrl.findMinDisStateSameRow(state);
+        cntrl.yAligned = cntrl.findMinDisStateSameCol(state);
+    }
 
     this.canvasMouseDown = function(event) {
         event.preventDefault();
@@ -368,13 +387,12 @@ function CanvasController(canvas, automaton, controlElem) {
             // test if clicked on one of the states
             if (euclideanDistance(state.position, [mouseX, mouseY]) < STATE_RAD) {
                 selected = state;
+                findAligned(state);
                 break;
             }
         }
     };
 
-    var locked = {x: false, y:false};
-    var accDelta = {x:0, y:0};
     this.canvasMouseMove = function(event) {
         event.preventDefault();
 
@@ -412,16 +430,17 @@ function CanvasController(canvas, automaton, controlElem) {
 
                 // update aligned states
                 if (cntrl.updateStateSpatial(selected)) {
-                    cntrl.xAligned = cntrl.findMinDisStateSameRow(selected);
-                    cntrl.yAligned = cntrl.findMinDisStateSameCol(selected);
+                    findAligned(selected);
 
                     if (cntrl.snap) {
                         if (cntrl.xAligned != null) {
                             selected.position[1] = cntrl.xAligned.position[1];
+                            cntrl.updateStateSpatial(selected);
                         }
 
                         if (cntrl.yAligned != null) {
                             selected.position[0] = cntrl.yAligned.position[0];
+                            cntrl.updateStateSpatial(selected);
                         }
 
                         locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
@@ -455,6 +474,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.canvasMouseExit = function(event) {
+        reset();
         $("body").removeClass("noscroll");
     };
 
