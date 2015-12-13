@@ -27,7 +27,6 @@
 
             $("#statePrefix").on("input", function(event) {
                 var prefixEmpty = $("#statePrefix").val().trim() == "";
-                console.log(prefixEmpty);
                 $("#cbIndexSubscript").prop("disabled", prefixEmpty);
             });
         });
@@ -188,7 +187,7 @@
 <div class="group" id="input">
     <div id="inputInner">
         <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div><br>
-        <input type="text" id="regex" value="abc" autofocus class="inputElement" list="regexList"><br> <!-- replace value with placeholder="(a|b)*c" in release-->
+        <input type="text" id="regex" value="(a|b)*c" autofocus class="inputElement" list="regexList"><br> <!-- replace value with placeholder="(a|b)*c" in release-->
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
 
@@ -280,10 +279,10 @@
                     <a href="#tikz_minDfa" data-toggle="tab" id="tikztab_minDfa">TIKZ Code</a>
                 </li>
                 <li>
-                    <a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX - rendered</a>
+                    <a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX: Preview</a>
                 </li>
                 <li>
-                    <a href="#structure_minDfa" data-toggle="tab" id="structuretab_minDfa">Edit Structure</a>
+                    <a href="#structure_minDfa" data-toggle="tab" id="structuretab_minDfa">Editor</a>
                 </li>
             </ul>
 

@@ -7,6 +7,7 @@ const ZOOM_STEP = 1;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
 const SNAP_RAD = .25;
+const LBL_OFFSET = .3;
 
 function CanvasController(canvas, automaton, controlElem) {
     // class member
@@ -117,16 +118,24 @@ function CanvasController(canvas, automaton, controlElem) {
 
         ctx.fill();
 
-        if (state.isStart) {
-            ctx.moveTo(posX - 2*realRad, posY);
-            ctx.lineTo(posX - realRad, posY);
-        }
-
         ctx.stroke();
+
+        if (state.isStart) {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            this.drawArrow(ctx, posX - 2*realRad, posY, posX - realRad, posY);
+            ctx.stroke();
+        }
 
         ctx.fillStyle = "#000000";
         ctx.fillText(toInternalID(state.name), posX, posY);
     };
+
+    function labelDir(fromState, toState) {
+        // on which side do we draw a transition label?
+        var dir = (discreetDirection(fromState.position, toState.position) + 1) % DIRECTIONS.length;
+        return DIRECTIONS[dir];
+    }
 
     this.drawTransitions = function(ctx, state) {
         var realRad = STATE_RAD * this.camera.zoom;
@@ -137,29 +146,50 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2;
 
-        // draw transition lines
-        for (var symb in state.transitions) {
-            var nextStates = state.transitions[symb];
-
-            for (var j = 0; j < nextStates.length; j++) {
-                var otherX =  nextStates[j].position[0] * this.camera.zoom + this.camera.x;
-                var otherY = -nextStates[j].position[1] * this.camera.zoom + this.camera.y;
-
-                var dir = unitVector(vecDifference(nextStates[j].position, state.position));
-
-                var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
-                var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
-
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(endX, endY);
-
-                //var midX = (posX + (otherX - posX) / 2);
-                //var midY = (posY + (otherY - posY) / 2);
-                //ctx.moveTo(midX, midY);
-                //symb = symb == EPS ? "€" : symb;
-                //ctx.fillText(symb, midX, midY);
-            }
+        // draw self loops
+        if (state.loop != null) {
+            this.drawLoop(ctx, posX, posY, state.loop.placement, generateAlphabetString(state.loop.symbs));
         }
+
+        // draw transition lines
+        for (var entry of state.outgoing.entries()) {
+            var nextState = entry[0];
+            var label = generateAlphabetString(entry[1].symbs, "ε");
+
+            var otherX =  nextState.position[0] * this.camera.zoom + this.camera.x;
+            var otherY = -nextState.position[1] * this.camera.zoom + this.camera.y;
+
+            var dir = unitVector(vecDifference(nextState.position, state.position));
+
+            var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
+            var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
+
+            this.drawArrow(ctx, startX, startY, endX, endY);
+
+            var midX = (posX + (otherX - posX) / 2);
+            var midY = (posY + (otherY - posY) / 2);
+
+            // determine position
+            const offset = LBL_OFFSET * this.camera.zoom;
+            switch(entry[1].placement) {
+                case "above":
+                    midY -= offset;
+                    break;
+                case "below":
+                    midY += offset;
+                    break;
+                case "left":
+                    midX -= offset;
+                    break;
+                case "right":
+                    midX += offset;
+                    break;
+            }
+
+            ctx.moveTo(midX, midY);
+            ctx.fillText(label, midX, midY);
+        }
+
 
         ctx.stroke();
     };
@@ -200,6 +230,72 @@ function CanvasController(canvas, automaton, controlElem) {
         }
     };
 
+    this.drawArrow = function (ctx, x1, y1, x2, y2){
+        var headlen = .25 * this.camera.zoom;
+        var angle = Math.atan2(y2 - y1, x2 - x1);
+
+        // draw main line
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+
+        // draw arrow head
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6));
+    };
+
+    this.drawLoop = function(ctx, x, y, direction, label) {
+        var realRad = STATE_RAD * this.camera.zoom;
+        var loopDis = realRad;
+        var loopExc = realRad;
+        var lblOffset = LBL_OFFSET * this.camera.zoom;
+
+        var start, mid, control1, control2, end, lblPos;
+
+        // state corner points
+        var val = Math.sqrt(2) * realRad / 2;
+        var upRight = [x+val, y-val]; var downRight = [x+val, y+val];
+        var upLeft  = [x-val, y-val]; var downLeft  = [x-val, y+val];
+
+        switch(direction) {
+            case "above":
+                start = upLeft; end = upRight;
+                mid = [x, y - realRad - loopDis];
+                control1 = [x - loopExc, mid[1]];
+                control2 = [x + loopExc, mid[1]];
+                lblPos = [x, mid[1] - lblOffset];
+                break;
+            case "below":
+                start = downRight; end = downLeft;
+                mid = [x, y + realRad + loopDis];
+                control1 = [x + loopExc, mid[1]];
+                control2 = [x - loopExc, mid[1]];
+                lblPos = [x, mid[1] + lblOffset];
+                break;
+            case "left":
+                start = downLeft; end = upLeft;
+                mid = [x - realRad - loopDis, y];
+                control1 = [mid[0], y + loopExc];
+                control2 = [mid[0], y - loopExc];
+                lblPos = [mid[0] - lblOffset, y];
+                break;
+            case "right":
+                start = upRight; end = downRight;
+                mid = [x + realRad + loopDis, y];
+                control1 = [mid[0], y - loopExc];
+                control2 = [mid[0], y + loopExc];
+                lblPos = [mid[0] + lblOffset, y];
+                break;
+        }
+
+        ctx.moveTo(start[0], start[1]);
+        ctx.quadraticCurveTo(control1[0], control1[1], mid[0], mid[1]);
+        ctx.moveTo(mid[0], mid[1]);
+        ctx.quadraticCurveTo(control2[0], control2[1], end[0], end[1]);
+
+        ctx.fillText(label, lblPos[0], lblPos[1]);
+    };
+
     this.zoomIn = function(amount) {
         this.camera.zoom += amount;
         this.camera.zoom = Math.min(this.camera.zoom, ZOOM_MAX);
@@ -231,7 +327,7 @@ function CanvasController(canvas, automaton, controlElem) {
         this.automaton.forEach(function(state) {
             state.position[0] -= offsetX;
             state.position[1] -= offsetY;
-            that.updateStateSpatial(state);
+            that.updateStatePositional(state);
         });
 
         this.drawAutomaton();
@@ -260,7 +356,47 @@ function CanvasController(canvas, automaton, controlElem) {
 
     };
 
-    this.updateStateSpatial = function(state) {
+    function updateTransitionDirs(state) {
+        state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
+
+        for (var entry of state.outgoing.entries()) {
+            var dir = DIRECTIONS[discreetDirection(state.position, entry[0].position)];
+            removeElem(state.freeDirs, dir);
+        }
+        for (var nextState of state.incoming) {
+            var dir = DIRECTIONS[discreetDirection(state.position, nextState.position)];
+            removeElem(state.freeDirs, dir);
+        }
+
+        if (state.loop != null) {
+            state.loop.placement = state.freeDirs.length > 0? state.freeDirs.pop() : "left";
+        }
+
+    }
+
+    this.updateStatePositional = function(state) {
+        // update state labels
+        for (var entry of state.outgoing.entries()) {
+            entry[1].placement = labelDir(state, entry[0]);
+
+            if (entry[0].loop != null) {
+                updateTransitionDirs(entry[0]);
+            }
+        }
+        for (var nextState of state.incoming) {
+            nextState.outgoing.get(state).placement = labelDir(nextState, state);
+
+            if (nextState.loop != null) {
+                updateTransitionDirs(nextState);
+            }
+        }
+
+        if (state.loop != null) {
+            updateTransitionDirs(state);
+        }
+
+
+        // update spatial data structure
         var spatialIdx = this.spatialIndex(state);
         var changed = false;
 
@@ -364,7 +500,7 @@ function CanvasController(canvas, automaton, controlElem) {
         this.spatial = {xMap: new Map(), yMap: new Map()};
 
         for (var i = 0; i < this.automaton.length; i++) {
-            this.updateStateSpatial(this.automaton[i]);
+            this.updateStatePositional(this.automaton[i]);
         }
     };
 
@@ -470,18 +606,18 @@ function CanvasController(canvas, automaton, controlElem) {
                 }
 
                 // update aligned states
-                if (cntrl.updateStateSpatial(selected)) {
+                if (cntrl.updateStatePositional(selected)) {
                     findAligned(selected);
 
                     if (cntrl.snap == "neighbour") {
                         if (cntrl.xAligned != null) {
                             selected.position[1] = cntrl.xAligned.position[1];
-                            cntrl.updateStateSpatial(selected);
+                            cntrl.updateStatePositional(selected);
                         }
 
                         if (cntrl.yAligned != null) {
                             selected.position[0] = cntrl.yAligned.position[0];
-                            cntrl.updateStateSpatial(selected);
+                            cntrl.updateStatePositional(selected);
                         }
 
                         locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};

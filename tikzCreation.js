@@ -2,24 +2,90 @@
  * Created by dennis on 25/10/15.
  */
 
-function convertToTikz(nfa) {
-    // initialize additional state attributes
-    nfa.forEach(function (state) {
-        state.position = [Math.random(), Math.random()];
-    });
+const DIRECTIONS = ["left", "below", "right", "above"];
 
+function convertToTikz(nfa) {
+    initializeStateMeta(nfa);
     layoutAut(nfa);
+    computeStateMeta(nfa);
     return generateCode(nfa);
 }
 
-function generateCode(nfa) {
+function initializeStateMeta(nfa) {
     nfa.forEach(function (state) {
-        state.freeDirs = ["below", "right", "above"];
-        if (!state.isStart) {
-            state.freeDirs.unshift("left");
+        state.position = [Math.random(), Math.random()];
+        state.incoming = new Set();
+        state.outgoing = new Map();
+        state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
+        state.loop = null;
+    });
+}
+
+function computeStateMeta(nfa) {
+    nfa.forEach(function (state) {
+        var loopSymbols = new Set();
+
+        for (var symb in state.transitions) {
+            for (var i = 0; i < state.transitions[symb].length; i++) {
+
+                var nextState = state.transitions[symb][i];
+
+                if (nextState == state) {
+                    loopSymbols.add(symb);
+                } else {
+                    var dir = discreetDirection(state.position, nextState.position);
+
+                    if (!state.outgoing.has(nextState)) {
+                        state.outgoing.set(nextState, {
+                            symbs: new Set(), placement: DIRECTIONS[(dir+1) % DIRECTIONS.length]});
+                    }
+                    state.outgoing.get(nextState).symbs.add(symb);
+                    nextState.incoming.add(state);
+
+                    // mark the direction as occupied
+                    removeElem(state.freeDirs, DIRECTIONS[dir]);
+                    removeElem(nextState.freeDirs, DIRECTIONS[(dir + 2) % DIRECTIONS.length]);
+                }
+            }
+        }
+
+        if (loopSymbols.size > 0) {
+            state.loop = {
+                symbs: loopSymbols,
+                placement: state.freeDirs.length > 0 ? state.freeDirs.pop() : "left"
+            };
         }
     });
+}
 
+function discreetDirection(fromVec, toVec) {
+    // figure out in what direction the edge goes
+    var pos = vecDifference(toVec, fromVec);
+    var edgeAngle = angle([0, 1], pos);
+    var fromDir;
+
+    if (pos[0] > 0) { // right side
+        if (edgeAngle < Math.PI / 4) {
+            fromDir = 3; // above
+        } else if (edgeAngle > 3 * Math.PI / 4) {
+            fromDir = 1; // below
+        } else {
+            fromDir = 2; // right
+        }
+    } else { // left side
+        if (edgeAngle < Math.PI / 4) {
+            fromDir = 3; // above
+        } else if (edgeAngle > 3 * Math.PI / 4) {
+            fromDir = 1; // below
+        } else {
+            fromDir = 0; // left
+        }
+    }
+
+    return fromDir;
+}
+
+function generateCode(nfa) {
     var tikz  = "\\usetikzlibrary{automata, positioning}\n";
     tikz += "\\begin{tikzpicture}\n";
 
@@ -55,117 +121,43 @@ function generateStateCode(state) {
 function generateTransitionsCode(state) {
     var fromName = toInternalID(state.name);
 
-    // build a map: state => symbols for transitions to that state
-    var stateSymbolMap = new Map();
-    var hasTransition = false;
-    for (symb in state.transitions) {
-        hasTransition = true;
-        for (var i = 0; i < state.transitions[symb].length; i++) {
-            var nextState = state.transitions[symb][i];
-            if (!stateSymbolMap.has(nextState)) {
-                stateSymbolMap.set(nextState, new Set());
-            }
-            stateSymbolMap.get(nextState).add(symb);
-        }
-    }
-
-    if (!hasTransition) { // no transitions to draw
+    if (state.outgoing.size == 0 && state.loop == null) { // no transitions to draw
         return "";
     }
 
     var result = "(" + fromName + ")";
-    const emptyWord = $("#emptySymb").val();
 
-    for (var entry of stateSymbolMap.entries()) {
-        var toName = toInternalID(entry[0].name);
-
-        // first, create all non-looping transitions
-        if (toName != fromName) {
-
-            // figure out in what direction the edge goes
-            var pos = vecDifference(entry[0].position, state.position);
-            var edgeAngle = angle([0, 1], pos);
-
-            var fromDir, toDir;
-
-            if (pos[0] > 0) { // right side
-                if (edgeAngle < Math.PI / 4) {
-                    fromDir = "above";
-                    toDir = "below";
-                } else if (edgeAngle > 3 * Math.PI / 4) {
-                    fromDir = "below";
-                    toDir = "above";
-                } else {
-                    fromDir = "right";
-                    toDir = "left";
-                }
-            } else { // left side
-                if (edgeAngle < Math.PI / 4) {
-                    fromDir = "above";
-                    toDir = "below";
-                } else if (edgeAngle > 3 * Math.PI / 4) {
-                    fromDir = "below";
-                    toDir = "above";
-                } else {
-                    fromDir = "left";
-                    toDir = "right";
-                }
-            }
-
-            // mark the direction as occupied
-            i = state.freeDirs.indexOf(fromDir);
-            if (i >= 0) { // remove the direction of the outgoing transition
-                state.freeDirs.splice(i, 1);
-            }
-
-            i = entry[0].freeDirs.indexOf(toDir);
-            if (i >= 0) {
-                entry[0].freeDirs.splice(i, 1);
-            }
-
-            // where to write the node label?
-            var nodeDir;
-            if (fromDir == "above") {
-                nodeDir = "left";
-            } else if (fromDir == "below") {
-                nodeDir = "right";
-            } else if (fromDir == "left") {
-                nodeDir = "below";
-            } else if (fromDir == "right") {
-                nodeDir = "above";
-            }
-
-            if (entry[0].hasTransitionTo(state)) {
-                //var dir = entry[0].name < state.name? "left" : "right";
-                result += "\tedge [bend right = 30] node [" + nodeDir + "] {\$";
-            } else {
-                result += "\tedge node [" + nodeDir + "] {\$";
-            }
-
-            var first = true;
-
-            for (var symb of entry[1]) {
-                symb = symb === EPS ? emptyWord : symb;
-                result += first ? symb : ", " + symb;
-                first = false;
-            }
-            result += "\$} (" + toName + ")\n";
-        }
+    // create code for loop
+    if (state.loop != null) {
+        result += "\tedge [loop " + state.loop.placement + "] node [" + state.loop.placement
+            + "] {\$" + generateAlphabetString(state.loop.symbs) +  "\$} ()\n";
     }
 
-    // add looping transitions wherever there is space for it
-    if (stateSymbolMap.has(state)) {
-        var dir = state.freeDirs.length > 0 ? state.freeDirs.pop() : "left";
-        result += "\tedge [loop " + dir + "] node [" + dir + "] {\$";
+    // create code for all other transitions
+    for (var entry of state.outgoing.entries()) {
+        var toName = toInternalID(entry[0].name);
 
-        first = true;
-        for (var symb of stateSymbolMap.get(state)) {
-            symb = symb === EPS ? empty : symb;
-            result += first ? symb : ", " + symb;
-            first = false;
+        if (state.incoming.has(entry[0])) {
+            result += "\tedge [bend right = 30] node [" + entry[1].placement + "] {\$";
+        } else {
+            result += "\tedge node [" + entry[1].placement + "] {\$";
         }
 
-        result += "\$} ()\n";
+        result +=  generateAlphabetString(entry[1].symbs) + "\$} (" + toName + ")\n";
+    }
+
+    return result;
+}
+
+function generateAlphabetString(alphSet, eps) {
+    const emptyWord = typeof(eps) == "undefined"? $("#emptySymb").val() : eps;
+    var result = "";
+    var first = true;
+
+    for (var symb of alphSet) {
+        symb = symb === EPS ? emptyWord : symb;
+        result += first ? symb : ", " + symb;
+        first = false;
     }
 
     return result;
@@ -181,6 +173,7 @@ function toInternalID(name) {
 }
 
 
+// graph drawing algorithm
 function layoutAut(states) {
     const ITER_THRESHOLD = 1000;
 
@@ -286,4 +279,12 @@ function dot(vec1, vec2) {
 
 function angle(vec1, vec2) {
     return Math.acos(dot(vec1, vec2) / (vecLen(vec1) * vecLen(vec2)));
+}
+
+
+function removeElem(array, elem) {
+    var i = array.indexOf(elem);
+    if (i >= 0) {
+        array.splice(i, 1);
+    }
 }
