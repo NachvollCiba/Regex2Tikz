@@ -502,6 +502,8 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.canvasMouseWheel = function(event) {
+        event.preventDefault();
+
         if (event.originalEvent.wheelDelta > 0 || event.originalEvent.detail < 0) {
             cntrl.zoomIn(ZOOM_STEP);
         }
@@ -510,20 +512,14 @@ function CanvasController(canvas, automaton, controlElem) {
         }
     };
 
-    this.canvasMouseEnter = function(event) {
-        $("body").addClass("noscroll");
-    };
-
     this.canvasMouseExit = function(event) {
         reset();
-        $("body").removeClass("noscroll");
     };
 
     // register the listeners
     this.canvas.mouseup(this.canvasMouseUp);
     this.canvas.mousedown(this.canvasMouseDown);
     this.canvas.mousemove(this.canvasMouseMove);
-    this.canvas.mouseenter(this.canvasMouseEnter);
     this.canvas.mouseleave(this.canvasMouseExit);
     this.canvas.bind('mousewheel DOMMouseScroll', this.canvasMouseWheel);
 
