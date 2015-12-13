@@ -27,7 +27,7 @@ function CanvasController(canvas, automaton, controlElem) {
         this.automaton = aut;
         this.buildSpatial();
 
-        this.snap = this.control.find("#cbAlign").is(":checked");
+        this.snap = this.control.find("#slSnap").val();
         this.showGrid = this.control.find("#cbGrid").is(":checked");
     };
 
@@ -43,88 +43,13 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.font = fontsize + "px Arial";
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        var realRad = STATE_RAD * this.camera.zoom;
-
         for (var i = 0; i < this.automaton.length; i++) {
             var state = this.automaton[i];
-            var posX =  state.position[0] * this.camera.zoom + this.camera.x;
-            var posY = -state.position[1] * this.camera.zoom + this.camera.y;
 
-            // draw transition lines
-            for (var symb in state.transitions) {
-                var nextStates = state.transitions[symb];
+            this.drawTransitions(ctx, state);
 
-                for (var j = 0; j < nextStates.length; j++) {
-                    var otherX =  nextStates[j].position[0] * this.camera.zoom + this.camera.x;
-                    var otherY = -nextStates[j].position[1] * this.camera.zoom + this.camera.y;
-
-                    var dir = unitVector(vecDifference(nextStates[j].position, state.position));
-
-                    var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
-                    var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
-
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(endX, endY);
-                    ctx.stroke();
-
-                    //var midX = (posX + (otherX - posX) / 2);
-                    //var midY = (posY + (otherY - posY) / 2);
-                    //ctx.moveTo(midX, midY);
-                    //symb = symb == EPS ? "€" : symb;
-                    //ctx.fillText(symb, midX, midY);
-                }
-            }
-
-
-            if (state == this.moving) {
-                ctx.beginPath();
-                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
-                ctx.fillStyle = "#e5ecff";
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "#000000";
-
-                // draw lines to aligned states
-                if (this.xAligned != null) {
-                    var otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
-                    var otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
-
-                    ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = "#A52A2A";
-                    ctx.moveTo(posX, posY);
-                    ctx.lineTo(otherX, otherY);
-                    ctx.stroke();
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#000000";
-                }
-
-                if (this.yAligned != null) {
-                    var otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
-                    var otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
-
-                    ctx.beginPath();
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = "#A52A2A";
-                    ctx.moveTo(posX, posY);
-                    ctx.lineTo(otherX, otherY);
-                    ctx.stroke();
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = "#000000";
-                }
-
-            } else {
-                ctx.beginPath();
-                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
-                ctx.fillStyle = "#f2f2f2";
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "#000000";
-            }
-
-            ctx.fillText(toInternalID(state.name), posX, posY);
-
+            this.drawAlignment(ctx, state);
+            this.drawState(ctx, state);
         }
     };
 
@@ -137,6 +62,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
         // draw major lines
         ctx.beginPath();
+        ctx.lineWidth = 1;
         ctx.strokeStyle = "#000000";
 
         for (var x = startX; x <= width; x+= stepSize) {
@@ -166,7 +92,112 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         ctx.stroke();
+    };
+
+    this.drawState = function(ctx, state) {
+        var realRad = STATE_RAD * this.camera.zoom;
+        var posX =  state.position[0] * this.camera.zoom + this.camera.x;
+        var posY = -state.position[1] * this.camera.zoom + this.camera.y;
+
         ctx.strokeStyle = "#000000";
+        if (state == this.moving) {
+            ctx.fillStyle = "#e5ecff";
+            ctx.lineWidth = 1;
+        } else {
+            ctx.fillStyle = "#f2f2f2";
+            ctx.lineWidth = 1;
+        }
+
+        ctx.beginPath();
+        ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+
+        if (state.isFinal) {
+            ctx.arc(posX, posY, Math.max(realRad - 3,0), 0, 2 * Math.PI);
+        }
+
+        ctx.fill();
+
+        if (state.isStart) {
+            ctx.moveTo(posX - 2*realRad, posY);
+            ctx.lineTo(posX - realRad, posY);
+        }
+
+        ctx.stroke();
+
+        ctx.fillStyle = "#000000";
+        ctx.fillText(toInternalID(state.name), posX, posY);
+    };
+
+    this.drawTransitions = function(ctx, state) {
+        var realRad = STATE_RAD * this.camera.zoom;
+        var posX =  state.position[0] * this.camera.zoom + this.camera.x;
+        var posY = -state.position[1] * this.camera.zoom + this.camera.y;
+
+        ctx.beginPath();
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+
+        // draw transition lines
+        for (var symb in state.transitions) {
+            var nextStates = state.transitions[symb];
+
+            for (var j = 0; j < nextStates.length; j++) {
+                var otherX =  nextStates[j].position[0] * this.camera.zoom + this.camera.x;
+                var otherY = -nextStates[j].position[1] * this.camera.zoom + this.camera.y;
+
+                var dir = unitVector(vecDifference(nextStates[j].position, state.position));
+
+                var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
+                var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
+
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+
+                //var midX = (posX + (otherX - posX) / 2);
+                //var midY = (posY + (otherY - posY) / 2);
+                //ctx.moveTo(midX, midY);
+                //symb = symb == EPS ? "€" : symb;
+                //ctx.fillText(symb, midX, midY);
+            }
+        }
+
+        ctx.stroke();
+    };
+
+    this.drawAlignment = function(ctx) {
+        if (this.moving == null) {
+            return; // no alignment to draw
+        }
+
+        var posX =  this.moving.position[0] * this.camera.zoom + this.camera.x;
+        var posY = -this.moving.position[1] * this.camera.zoom + this.camera.y;
+
+        // draw lines to aligned states
+        if (this.xAligned != null) {
+            var otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
+            var otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
+
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#A52A2A";
+            ctx.moveTo(posX, posY);
+            ctx.lineTo(otherX, otherY);
+            ctx.stroke();
+            ctx.strokeStyle = "#000000";
+        }
+
+        if (this.yAligned != null) {
+            var otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
+            var otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
+
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#A52A2A";
+            ctx.moveTo(posX, posY);
+            ctx.lineTo(otherX, otherY);
+            ctx.stroke();
+            ctx.strokeStyle = "#000000";
+        }
     };
 
     this.zoomIn = function(amount) {
@@ -280,7 +311,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
                 if (dis < minDis) {
                     minDis = dis;automaton =
-                    minState = other;
+                        minState = other;
                 }
             }
         });
@@ -387,6 +418,7 @@ function CanvasController(canvas, automaton, controlElem) {
             // test if clicked on one of the states
             if (euclideanDistance(state.position, [mouseX, mouseY]) < STATE_RAD) {
                 selected = state;
+                selected.canvasPos = [selected.position[0], selected.position[1]];
                 findAligned(state);
                 break;
             }
@@ -408,31 +440,40 @@ function CanvasController(canvas, automaton, controlElem) {
                 var movX = deltaX / cntrl.camera.zoom;
                 var movY = deltaY / cntrl.camera.zoom;
 
-                if (locked.x) {
-                    accDelta.x += movX;
-                    if (Math.abs(accDelta.x) > 2 * SNAP_RAD) {
-                        selected.position[0] += accDelta.x;
-                        accDelta.x = 0;
-                    }
-                } else {
-                    selected.position[0] += movX;cntrl.showGrid = cntrl.control.find("#cbGrid").is(":checked");
-                }
+                selected.canvasPos[0] += movX;
+                selected.canvasPos[1] -= movY;
 
-                if (locked.y) {
-                    accDelta.y += movY;
-                    if (Math.abs(accDelta.y) > 2 * SNAP_RAD) {
-                        selected.position[1] -= accDelta.y;
-                        accDelta.y = 0;
+                if (cntrl.snap == "neighbour") {
+                    if (locked.x) {
+                        var distX = Math.abs(selected.canvasPos[0] - selected.position[0]);
+                        if (distX > 2 * SNAP_RAD) {
+                            selected.position[0] = selected.canvasPos[0];
+                        }
+                    } else {
+                        selected.position[0] = selected.canvasPos[0];
                     }
-                } else {
-                    selected.position[1] -= movY;
+
+                    if (locked.y) {
+                        var distY = Math.abs(selected.canvasPos[1] - selected.position[1]);
+                        if (distY > 2 * SNAP_RAD) {
+                            selected.position[1] = selected.canvasPos[1];
+                        }
+                    } else {
+                        selected.position[1] = selected.canvasPos[1];
+                    }
+                } else if (cntrl.snap == "grid") {
+                    selected.position[0] = Math.round(selected.canvasPos[0] / SNAP_RAD) * SNAP_RAD;
+                    selected.position[1] = Math.round(selected.canvasPos[1] / SNAP_RAD) * SNAP_RAD;
+                } else if (cntrl.snap == "none") {
+                    selected.position[0] = selected.canvasPos[0];
+                    selected.position[1] = selected.canvasPos[1];
                 }
 
                 // update aligned states
                 if (cntrl.updateStateSpatial(selected)) {
                     findAligned(selected);
 
-                    if (cntrl.snap) {
+                    if (cntrl.snap == "neighbour") {
                         if (cntrl.xAligned != null) {
                             selected.position[1] = cntrl.xAligned.position[1];
                             cntrl.updateStateSpatial(selected);
@@ -504,8 +545,8 @@ function CanvasController(canvas, automaton, controlElem) {
         cntrl.center();
     });
 
-    this.control.find("#cbAlign").click(function(event){
-        cntrl.snap = cntrl.control.find("#cbAlign").is(":checked");
-        cntrl.drawAutomaton(0);
+    this.control.find("#slSnap").click(function(event){
+        cntrl.snap = this.value;
+        cntrl.drawAutomaton();
     });
 }

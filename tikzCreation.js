@@ -5,10 +5,6 @@
 function convertToTikz(nfa) {
     // initialize additional state attributes
     nfa.forEach(function (state) {
-        state.freeDirs = ["below", "right", "above"];
-        if (!state.isStart) {
-            state.freeDirs.unshift("left");
-        }
         state.position = [Math.random(), Math.random()];
     });
 
@@ -17,6 +13,13 @@ function convertToTikz(nfa) {
 }
 
 function generateCode(nfa) {
+    nfa.forEach(function (state) {
+        state.freeDirs = ["below", "right", "above"];
+        if (!state.isStart) {
+            state.freeDirs.unshift("left");
+        }
+    });
+
     var tikz  = "\\usetikzlibrary{automata, positioning}\n";
     tikz += "\\begin{tikzpicture}\n";
 

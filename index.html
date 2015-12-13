@@ -302,7 +302,11 @@
                         <button type="button" class="btn btn-default" id="btnZoomIn">+</button>
                         <button type="button" class="btn btn-default" id="btnZoomOut">-</button>
                         <button type="button" class="btn btn-default" id="btnCenter">Center automaton</button>
-                        <label><input type="checkbox" id="cbAlign" checked> Snap to neighbour</label>
+                        <label>Snap to <select id="slSnap">
+                            <option value="neighbour">Neighbour</option>
+                            <option value="grid">Grid</option>
+                            <option value="none">Nothing</option>
+                        </select></label>
                     </div><hr>
                     <canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
                 </div>
