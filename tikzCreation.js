@@ -256,21 +256,6 @@ function layoutAut(states) {
             states[x].position[1] += movDeltas[x][1];
         }
     }
-
-    //// last step: center all states around [0,0]
-    //var offsetX = 0; var offsetY = 0;
-    //states.forEach(function(state) {
-    //    offsetX += state.position[0];
-    //    offsetY += state.position[1];
-    //});
-    //
-    //offsetX /= states.length;
-    //offsetY /= states.length;
-    //console.log(offsetX + " " + offsetY);
-    //states.forEach(function(state) {
-    //    state.position[0] -= offsetX;
-    //    state.position[1] -= offsetY;
-    //});
 }
 
 function unitVector(vec) {

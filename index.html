@@ -298,10 +298,12 @@
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
                 </div>
                 <div class="tab-pane" id="structure_minDfa">
-                    <div class="left canvasControl"><span>
-                        <input type="checkbox" id="cbGrid"> Show Grid</span>
+                    <div class="left canvasControl">
+                        <label><input type="checkbox" id="cbGrid"> Show Grid</label>
                         <button type="button" class="btn btn-default" id="btnZoomIn">+</button>
                         <button type="button" class="btn btn-default" id="btnZoomOut">-</button>
+                        <button type="button" class="btn btn-default" id="btnCenter">Center automaton</button>
+                        <label><input type="checkbox" id="cbAlign" checked> Snap to neighbour</label>
                     </div><hr>
                     <canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
                 </div>

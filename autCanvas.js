@@ -20,12 +20,16 @@ function CanvasController(canvas, automaton, controlElem) {
     this.xAligned = null;
     this.yAligned = null;
     this.showGrid = false;
+    this.snap = false;
 
     // class methods
 
     this.initialize = function() {
         // build the spatial data structure
         this.buildSpatial();
+
+        this.snap = this.control.find("#cbAlign").is(":checked");
+        this.showGrid = this.control.find("#cbGrid").is(":checked");
     };
 
     this.drawAutomaton = function() {
@@ -47,50 +51,7 @@ function CanvasController(canvas, automaton, controlElem) {
             var posX =  state.position[0] * this.camera.zoom + this.camera.x;
             var posY = -state.position[1] * this.camera.zoom + this.camera.y;
 
-
-            if (state == this.moving) {
-                ctx.beginPath();
-                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
-                ctx.fillStyle = "#e5ecff";
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "#000000";
-
-                if (this.xAligned != null) {
-                    var otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
-                    var otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = "#A52A2A";
-                    ctx.moveTo(posX, posY);
-                    ctx.lineTo(otherX, otherY);
-                    ctx.stroke();
-                    ctx.strokeStyle = "#000000";
-                }
-
-                if (this.yAligned != null) {
-                    var otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
-                    var otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = "#A52A2A";
-                    ctx.moveTo(posX, posY);
-                    ctx.lineTo(otherX, otherY);
-                    ctx.stroke();
-                    ctx.strokeStyle = "#000000";
-                }
-
-            } else {
-                ctx.beginPath();
-                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
-                ctx.fillStyle = "#f2f2f2";
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "#000000";
-            }
-
-            ctx.fillText(toInternalID(state.name), posX, posY);
-
+            // draw transition lines
             for (var symb in state.transitions) {
                 var nextStates = state.transitions[symb];
 
@@ -115,6 +76,56 @@ function CanvasController(canvas, automaton, controlElem) {
                     //ctx.fillText(symb, midX, midY);
                 }
             }
+
+
+            if (state == this.moving) {
+                ctx.beginPath();
+                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+                ctx.fillStyle = "#e5ecff";
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "#000000";
+
+                // draw lines to aligned states
+                if (this.xAligned != null) {
+                    var otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
+                    var otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
+
+                    ctx.beginPath();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#A52A2A";
+                    ctx.moveTo(posX, posY);
+                    ctx.lineTo(otherX, otherY);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = "#000000";
+                }
+
+                if (this.yAligned != null) {
+                    var otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
+                    var otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
+
+                    ctx.beginPath();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#A52A2A";
+                    ctx.moveTo(posX, posY);
+                    ctx.lineTo(otherX, otherY);
+                    ctx.stroke();
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = "#000000";
+                }
+
+            } else {
+                ctx.beginPath();
+                ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+                ctx.fillStyle = "#f2f2f2";
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "#000000";
+            }
+
+            ctx.fillText(toInternalID(state.name), posX, posY);
+
         }
     };
 
@@ -122,11 +133,8 @@ function CanvasController(canvas, automaton, controlElem) {
         var width = this.canvas[0].width; var height = this.canvas[0].height;
         var stepSize = 2* SNAP_RAD * this.camera.zoom;
 
-
-
         var startX = this.camera.x - Math.floor(this.camera.x / (stepSize)) * stepSize;
         var startY = this.camera.y - Math.floor(this.camera.y / (stepSize)) * stepSize;
-        console.log(startX);
 
         // draw major lines
         ctx.beginPath();
@@ -173,6 +181,29 @@ function CanvasController(canvas, automaton, controlElem) {
         this.camera.zoom = Math.max(this.camera.zoom, 0);
         this.drawAutomaton();
     };
+
+    // center both automaton and camera around 0,0
+    this.center = function() {
+        this.camera.x = this.canvas[0].width / 2;
+        this.camera.y = this.canvas[0].height / 2;
+
+
+        var offsetX = 0; var offsetY = 0;
+        this.automaton.forEach(function(state) {
+            offsetX += state.position[0];
+            offsetY += state.position[1];
+        });
+
+        offsetX /= this.automaton.length;
+        offsetY /= this.automaton.length;
+        this.automaton.forEach(function(state) {
+            state.position[0] -= offsetX;
+            state.position[1] -= offsetY;
+        });
+
+        this.drawAutomaton();
+    };
+
 
 
     this.spatialIndex = function(state) {
@@ -361,26 +392,22 @@ function CanvasController(canvas, automaton, controlElem) {
 
                 if (locked.x) {
                     accDelta.x += movX;
-                    console.log(locked);
-                    console.log(accDelta);
-                    if (Math.abs(accDelta.x) > SNAP_RAD) {
-                        console.log(selected.position);
+                    if (Math.abs(accDelta.x) > 2 * SNAP_RAD) {
                         selected.position[0] += accDelta.x;
-                        console.log(selected.position);
                         accDelta.x = 0;
                     }
                 } else {
-                    selected.position[0] += movX;
+                    selected.position[0] += movX;cntrl.showGrid = cntrl.control.find("#cbGrid").is(":checked");
                 }
 
                 if (locked.y) {
                     accDelta.y += movY;
-                    if (Math.abs(accDelta.y) > SNAP_RAD) {
-                        selected.position[1] += accDelta.y;
+                    if (Math.abs(accDelta.y) > 2 * SNAP_RAD) {
+                        selected.position[1] -= accDelta.y;
                         accDelta.y = 0;
-                    } else {
-                        selected.position[1] += movY;
                     }
+                } else {
+                    selected.position[1] -= movY;
                 }
 
                 // update aligned states
@@ -388,15 +415,17 @@ function CanvasController(canvas, automaton, controlElem) {
                     cntrl.xAligned = cntrl.findMinDisStateSameRow(selected);
                     cntrl.yAligned = cntrl.findMinDisStateSameCol(selected);
 
-                    if (cntrl.xAligned != null) {
-                        selected.position[1] = cntrl.xAligned.position[1];
-                    }
+                    if (cntrl.snap) {
+                        if (cntrl.xAligned != null) {
+                            selected.position[1] = cntrl.xAligned.position[1];
+                        }
 
-                    if (cntrl.yAligned != null) {
-                        selected.position[0] = cntrl.yAligned.position[0];
-                    }
+                        if (cntrl.yAligned != null) {
+                            selected.position[0] = cntrl.yAligned.position[0];
+                        }
 
-                    locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
+                        locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
+                    }
                 }
 
                 // TODO live editing of the tikz code
@@ -449,5 +478,14 @@ function CanvasController(canvas, automaton, controlElem) {
     this.control.find("#cbGrid").click(function(event) {
         cntrl.showGrid = cntrl.control.find("#cbGrid").is(":checked");
         cntrl.drawAutomaton();
+    });
+
+    this.control.find("#btnCenter").click(function(event) {
+        cntrl.center();
+    });
+
+    this.control.find("#cbAlign").click(function(event){
+        cntrl.snap = cntrl.control.find("#cbAlign").is(":checked");
+        cntrl.drawAutomaton(0);
     });
 }
