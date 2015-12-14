@@ -117,7 +117,7 @@
                 data.canvasCntrl = new CanvasController(canvas, automaton, elem.find(".canvasControl"));
 
                 // bind the function for the render button
-                var renderBtn = elem.find(":button");
+                var renderBtn = elem.find("#btnRender");
                 var tikzDispl = elem.find("textarea");
                 var renderImg = elem.find("img");
                 renderBtn.click(function(event) {
@@ -133,7 +133,7 @@
             } else { // find all the (existing) elements
                 tikzDispl = elem.find("textarea");
                 renderImg = elem.find("img");
-                renderBtn = elem.find("button");
+                renderBtn = elem.find("#btnRender");
             }
 
             // populate the element contents
@@ -292,7 +292,7 @@
                 </div>
                 <div class="tab-pane" id="latex_minDfa">
                     <img src="" class="autDisplay"/> <br>
-                    <button type="button" class="btn btn-primary">Render again...</button><br>
+                    <button type="button" class="btn btn-primary" id="btnRender">Render again...</button><br>
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
                 </div>
                 <div class="tab-pane" id="structure_minDfa">
@@ -300,10 +300,11 @@
                         <label><input type="checkbox" id="cbGrid"> Show Grid</label>
                         <button type="button" class="btn btn-default" id="btnZoomIn">+</button>
                         <button type="button" class="btn btn-default" id="btnZoomOut">-</button>
-                        <button type="button" class="btn btn-default" id="btnCenter">Center automaton</button>
+                        <button type="button" class="btn btn-default" id="btnCenter">Center</button>
+                        <button type="button" class="btn btn-default" id="btnAlign">Align to grid</button>
                         <label>Snap to <select id="slSnap">
-                            <option value="neighbour">Neighbour</option>
                             <option value="grid">Grid</option>
+                            <option value="neighbour">Neighbour</option>
                             <option value="none">Nothing</option>
                         </select></label>
                     </div><hr>

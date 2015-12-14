@@ -163,6 +163,13 @@ function generateAlphabetString(alphSet, eps) {
     return result;
 }
 
+function alignAutomaton(automaton, gridWidth) {
+    automaton.forEach(function(state) {
+        state.position[0] = Math.round(state.position[0] / gridWidth) * gridWidth;
+        state.position[1] = Math.round(state.position[1] / gridWidth) * gridWidth;
+    });
+}
+
 // TODO put all things in one regex (efficiency)
 function toInternalID(name) {
     return name.toString()
@@ -251,6 +258,9 @@ function layoutAut(states) {
             states[x].position[0] += movDeltas[x][0];
             states[x].position[1] += movDeltas[x][1];
         }
+
+        // align automaton to grid
+        alignAutomaton(states, SNAP_RAD);
     }
 }
 

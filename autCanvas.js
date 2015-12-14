@@ -686,6 +686,11 @@ function CanvasController(canvas, automaton, controlElem) {
         cntrl.center();
     });
 
+    this.control.find("#btnAlign").click(function(event) {
+        alignAutomaton(cntrl.automaton, SNAP_RAD);
+        cntrl.drawAutomaton();
+    });
+
     this.control.find("#slSnap").click(function(event){
         cntrl.snap = this.value;
         cntrl.drawAutomaton();
