@@ -160,39 +160,42 @@ function CanvasController(canvas, automaton, controlElem) {
             var otherX =  nextState.position[0] * this.camera.zoom + this.camera.x;
             var otherY = -nextState.position[1] * this.camera.zoom + this.camera.y;
 
-            var dir = unitVector(vecDifference(nextState.position, state.position));
+            if (state.incoming.has(nextState)) {
+                this.drawBended(ctx, state.position, nextState.position,
+                    entry[1].placement, generateAlphabetString(entry[1].symbs))
+            } else {
+                var dir = unitVector(vecDifference(nextState.position, state.position));
 
-            var startX = posX + realRad * dir[0]; var startY = posY - realRad * dir[1];
-            var endX = otherX - realRad * dir[0]; var endY = otherY + realRad * dir[1];
+                var startX = posX + realRad * dir[0];
+                var startY = posY - realRad * dir[1];
+                var endX = otherX - realRad * dir[0];
+                var endY = otherY + realRad * dir[1];
 
-            this.drawArrow(ctx, startX, startY, endX, endY);
+                this.drawArrow(ctx, startX, startY, endX, endY);
 
-            var midX = (posX + (otherX - posX) / 2);
-            var midY = (posY + (otherY - posY) / 2);
+                var midX = (posX + (otherX - posX) / 2);
+                var midY = (posY + (otherY - posY) / 2);
 
-            // determine position
-            const offset = LBL_OFFSET * this.camera.zoom;
-            switch(entry[1].placement) {
-                case "above":
-                    midY -= offset;
-                    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-                    break;
-                case "below":
-                    ctx.textAlign = "center"; ctx.textBaseline = "top";
-                    midY += offset;
-                    break;
-                case "left":
-                    ctx.textAlign = "right"; ctx.textBaseline = "middle";
-                    midX -= offset;
-                    break;
-                case "right":
-                    ctx.textAlign = "left"; ctx.textBaseline = "middle";
-                    midX += offset;
-                    break;
+                // determine position
+                const offset = LBL_OFFSET * this.camera.zoom;
+                switch(entry[1].placement) {
+                    case "above":
+                        midY -= offset;
+                        break;
+                    case "below":
+                        midY += offset;
+                        break;
+                    case "left":
+                        midX -= offset;
+                        break;
+                    case "right":
+                        midX += offset;
+                        break;
+                }
+
+                setTextAlign(ctx, entry[1].placement);
+                ctx.fillText(label, midX, midY);
             }
-
-            ctx.moveTo(midX, midY);
-            ctx.fillText(label, midX, midY);
         }
 
 
@@ -236,17 +239,77 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.drawArrow = function (ctx, x1, y1, x2, y2){
-        var headlen = .25 * this.camera.zoom;
         var angle = Math.atan2(y2 - y1, x2 - x1);
 
         // draw main line
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
 
-        // draw arrow head
-        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6));
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6));
+        drawArrowHead(x2, y2, angle);
+    };
+
+    this.drawArrowHead = function(ctx, x, y, angle) {
+        var headlen = .25 * this.camera.zoom;
+        ctx.lineTo(x - headlen * Math.cos(angle - Math.PI/6), y - headlen * Math.sin(angle - Math.PI/6));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle + Math.PI/6), y - headlen * Math.sin(angle + Math.PI/6));
+    };
+
+    this.drawBended = function(ctx, pos1, pos2, lblDirection, label) {
+        const dis = 2*STATE_RAD; // distance in world coordinates
+        const angle = 0.523599; // 30°
+
+        var dir = unitVector(vecDifference(pos2, pos1));
+        dir[0] *= STATE_RAD; dir[1] *= STATE_RAD;
+        var start = [pos1[0] + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle), // rotate by angle
+            pos1[1] + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+
+        var end = [pos2[0] - dir[0] * Math.cos(-angle) + dir[1] * Math.sin(-angle), // rotate by angle
+            pos2[1] - dir[0] * Math.sin(-angle) - dir[1] * Math.cos(-angle)];
+
+        var midX = start[0] + (end[0] - start[0]) / 2;
+        var midY = start[1] + (end[1] - start[1]) / 2;
+
+        var ortho = [-dir[1], dir[0]];
+
+        var controlX = midX + ortho[0] * dis;
+        var controlY = midY + ortho[1] * dis;
+
+        // translate from world to screen coordinates
+        start[0] =  start[0] * this.camera.zoom + this.camera.x;
+        start[1] = -start[1] * this.camera.zoom + this.camera.y;
+
+        end[0] =  end[0] * this.camera.zoom + this.camera.x;
+        end[1] = -end[1] * this.camera.zoom + this.camera.y;
+
+        controlX =  controlX * this.camera.zoom + this.camera.x;
+        controlY = -controlY * this.camera.zoom + this.camera.y;
+
+        ctx.moveTo(start[0], start[1]);
+        ctx.quadraticCurveTo(controlX, controlY, end[0], end[1]);
+
+        this.drawArrowHead(ctx, end[0], end[1], angle);
+
+        // draw label
+        var lblX = controlX; var lblY = controlY;
+        var lblOffset = LBL_OFFSET * this.camera.zoom / 2;
+        switch (lblDirection) {
+            case "above":
+                lblY -= lblOffset;
+                break;
+            case "below":
+                lblY += lblOffset;
+                break;
+            case "left":
+                lblX -= lblOffset;
+                break;
+            case "right":
+                lblX += lblOffset;
+                break;
+        }
+
+        setTextAlign(ctx, lblDirection);
+        ctx.fillText(label, lblX, lblY);
     };
 
     this.drawLoop = function(ctx, x, y, direction, label) {
@@ -254,13 +317,14 @@ function CanvasController(canvas, automaton, controlElem) {
         var loopDis = realRad;
         var loopExc = realRad;
         var lblOffset = LBL_OFFSET * this.camera.zoom;
+        const angle = 0.523599; // 30°
 
         var start, mid, control1, control2, end, lblPos;
 
         // state corner points
-        var val = Math.sqrt(2) * realRad / 2;
-        var upRight = [x+val, y-val]; var downRight = [x+val, y+val];
-        var upLeft  = [x-val, y-val]; var downLeft  = [x-val, y+val];
+        const val = Math.sqrt(2) * realRad / 2;
+        const upRight = [x+val, y-val]; const downRight = [x+val, y+val];
+        const upLeft  = [x-val, y-val]; const downLeft  = [x-val, y+val];
 
         switch(direction) {
             case "above":
@@ -269,7 +333,6 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
                 lblPos = [x, mid[1] - lblOffset];
-                ctx.textAlign = "center"; ctx.textBaseline = "bottom";
                 break;
             case "below":
                 start = downRight; end = downLeft;
@@ -277,7 +340,6 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
                 lblPos = [x, mid[1] + lblOffset];
-                ctx.textAlign = "center"; ctx.textBaseline = "top";
                 break;
             case "left":
                 start = downLeft; end = upLeft;
@@ -285,7 +347,6 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
                 lblPos = [mid[0] - lblOffset, y];
-                ctx.textAlign = "right"; ctx.textBaseline = "middle";
                 break;
             case "right":
                 start = upRight; end = downRight;
@@ -293,7 +354,6 @@ function CanvasController(canvas, automaton, controlElem) {
                 control1 = [mid[0], y - loopExc];
                 control2 = [mid[0], y + loopExc];
                 lblPos = [mid[0] + lblOffset, y];
-                ctx.textAlign = "left"; ctx.textBaseline = "middle";
                 break;
         }
 
@@ -302,8 +362,26 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.moveTo(mid[0], mid[1]);
         ctx.quadraticCurveTo(control2[0], control2[1], end[0], end[1]);
 
+        setTextAlign(ctx, direction);
         ctx.fillText(label, lblPos[0], lblPos[1]);
     };
+
+    function setTextAlign(ctx, direction) {
+        switch(direction) {
+            case "above":
+                ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+                break;
+            case "below":
+                ctx.textAlign = "center"; ctx.textBaseline = "top";
+                break;
+            case "left":
+                ctx.textAlign = "right"; ctx.textBaseline = "middle";
+                break;
+            case "right":
+                ctx.textAlign = "left"; ctx.textBaseline = "middle";
+                break;
+        }
+    }
 
     this.zoomIn = function(amount) {
         this.camera.zoom += amount;
@@ -632,8 +710,6 @@ function CanvasController(canvas, automaton, controlElem) {
                         locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
                     }
                 }
-
-                // TODO live editing of the tikz code
             } else { // move the camera
                 cntrl.camera.x += deltaX;
                 cntrl.camera.y += deltaY;
