@@ -7,7 +7,7 @@ const ZOOM_STEP = 1;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
 const SNAP_RAD = .25;
-const LBL_OFFSET = .1;
+const LBL_OFFSET = .15;
 
 function CanvasController(canvas, automaton, controlElem) {
     // class member
@@ -245,7 +245,7 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
 
-        drawArrowHead(x2, y2, angle);
+        this.drawArrowHead(ctx, x2, y2, angle);
     };
 
     this.drawArrowHead = function(ctx, x, y, angle) {
@@ -256,10 +256,10 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.drawBended = function(ctx, pos1, pos2, lblDirection, label) {
-        const dis = 2*STATE_RAD; // distance in world coordinates
-        const angle = 0.523599; // 30°
+        const dis = 3*STATE_RAD;// distance in world coordinates
+        const angle = 5.75959; // 30°
 
-        var dir = unitVector(vecDifference(pos2, pos1));
+        var dir =  unitVector(vecDifference(pos2, pos1));
         dir[0] *= STATE_RAD; dir[1] *= STATE_RAD;
         var start = [pos1[0] + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle), // rotate by angle
             pos1[1] + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
@@ -270,7 +270,7 @@ function CanvasController(canvas, automaton, controlElem) {
         var midX = start[0] + (end[0] - start[0]) / 2;
         var midY = start[1] + (end[1] - start[1]) / 2;
 
-        var ortho = [-dir[1], dir[0]];
+        var ortho = [dir[1], -dir[0]];
 
         var controlX = midX + ortho[0] * dis;
         var controlY = midY + ortho[1] * dis;
@@ -288,11 +288,11 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.moveTo(start[0], start[1]);
         ctx.quadraticCurveTo(controlX, controlY, end[0], end[1]);
 
-        this.drawArrowHead(ctx, end[0], end[1], angle);
+        this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-controlY, end[0]-controlX));
 
         // draw label
         var lblX = controlX; var lblY = controlY;
-        var lblOffset = LBL_OFFSET * this.camera.zoom / 2;
+        var lblOffset = LBL_OFFSET * this.camera.zoom + 10;
         switch (lblDirection) {
             case "above":
                 lblY -= lblOffset;
@@ -319,37 +319,32 @@ function CanvasController(canvas, automaton, controlElem) {
         var lblOffset = LBL_OFFSET * this.camera.zoom;
         const angle = 0.523599; // 30°
 
-        var start, mid, control1, control2, end, lblPos;
 
-        // state corner points
-        const val = Math.sqrt(2) * realRad / 2;
-        const upRight = [x+val, y-val]; const downRight = [x+val, y+val];
-        const upLeft  = [x-val, y-val]; const downLeft  = [x-val, y+val];
-
+        var dir, mid, control1, control2, lblPos;
         switch(direction) {
             case "above":
-                start = upLeft; end = upRight;
+                dir = [0,-realRad];
                 mid = [x, y - realRad - loopDis];
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
                 lblPos = [x, mid[1] - lblOffset];
                 break;
             case "below":
-                start = downRight; end = downLeft;
+                dir = [0,realRad];
                 mid = [x, y + realRad + loopDis];
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
                 lblPos = [x, mid[1] + lblOffset];
                 break;
             case "left":
-                start = downLeft; end = upLeft;
+                dir = [-realRad,0];
                 mid = [x - realRad - loopDis, y];
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
                 lblPos = [mid[0] - lblOffset, y];
                 break;
             case "right":
-                start = upRight; end = downRight;
+                dir = [realRad,0];
                 mid = [x + realRad + loopDis, y];
                 control1 = [mid[0], y - loopExc];
                 control2 = [mid[0], y + loopExc];
@@ -357,10 +352,17 @@ function CanvasController(canvas, automaton, controlElem) {
                 break;
         }
 
+        var end = [x + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle),
+            y + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+
+        var start = [x + dir[0] * Math.cos(-angle) - dir[1] * Math.sin(-angle),
+            y + dir[0] * Math.sin(-angle) + dir[1] * Math.cos(-angle)];
+
         ctx.moveTo(start[0], start[1]);
         ctx.quadraticCurveTo(control1[0], control1[1], mid[0], mid[1]);
         ctx.moveTo(mid[0], mid[1]);
         ctx.quadraticCurveTo(control2[0], control2[1], end[0], end[1]);
+        this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-control2[1], end[0]-control2[0]));
 
         setTextAlign(ctx, direction);
         ctx.fillText(label, lblPos[0], lblPos[1]);
@@ -369,10 +371,10 @@ function CanvasController(canvas, automaton, controlElem) {
     function setTextAlign(ctx, direction) {
         switch(direction) {
             case "above":
-                ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+                ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
                 break;
             case "below":
-                ctx.textAlign = "center"; ctx.textBaseline = "top";
+                ctx.textAlign = "center"; ctx.textBaseline = "hanging";
                 break;
             case "left":
                 ctx.textAlign = "right"; ctx.textBaseline = "middle";

@@ -44,11 +44,13 @@
                 var minDFA = minimize(dfa);
 
                 // adjust the DOM to show the resulting automatons
+                var onlyDfa = true;
                 $("#result").show();
                 if ($("#showNFA").is(":checked")) {
                     console.log("Creating HTML elements for the nfa");
                     $("#nfaDiv").show();
                     fillResult($("#nfa"), nfa);
+                    onlyDfa = false;
                 } else {
                     $("#nfaDiv").hide();
                 }
@@ -57,8 +59,13 @@
                     console.log("Creating HTML elements for the powerset dfa");
                     $("#dfaDiv").show();
                     fillResult($("#dfa"), dfa);
+                    onlyDfa = false;
                 } else {
                     $("#dfaDiv").hide();
+                }
+
+                if (onlyDfa) { // open the dfa div
+                    $("#minDfaHeader").click();
                 }
 
                 console.log("Creating HTML elements for the minimal dfa");
@@ -73,7 +80,7 @@
                 $("#origRegexDisplay").text(parser.origInput);
                 $("#autSizeDisplay").text(minDFA.length);
             } catch (e) {
-                console.log("An exception occured");
+                console.log("An exception occurred");
                 console.log(e);
                 console.log(e.stack);
             }
