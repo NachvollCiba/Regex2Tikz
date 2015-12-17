@@ -36,40 +36,31 @@
             try {
                 // parse the regex and create the automatons
                 var parser = new RegexParser(regex);
-                console.log("Compiling regular expression to nfa");
                 var nfa = parser.parse();
-                console.log("Creating DFA");
                 var dfa = nfa2dfa(nfa, parser.alphabet, $("#generateSink").is(":checked"));
-                console.log("Minimizing DFA");
-                var minDFA = minimize(dfa);
+                var minDfa = minimize(dfa);
 
                 // adjust the DOM to show the resulting automatons
-                var onlyDfa = true;
-                $("#result").show();
                 if ($("#showNFA").is(":checked")) {
-                    console.log("Creating HTML elements for the nfa");
                     $("#nfaDiv").show();
                     fillResult($("#nfa"), nfa);
-                    onlyDfa = false;
                 } else {
                     $("#nfaDiv").hide();
                 }
 
                 if ($("#showDFA").is(":checked")) {
-                    console.log("Creating HTML elements for the powerset dfa");
                     $("#dfaDiv").show();
                     fillResult($("#dfa"), dfa);
-                    onlyDfa = false;
                 } else {
                     $("#dfaDiv").hide();
                 }
 
-                if (onlyDfa) { // open the dfa div
-                    $("#minDfaHeader").click();
-                }
+                fillResult($("#minDfa"), minDfa);
+                $("#result").show();
 
-                console.log("Creating HTML elements for the minimal dfa");
-                fillResult($("#minDfa"), minDFA);
+                if ( !$("#showNFA").is(":checked") && !($("showDFA").is(":checked")) ) {
+                    $("#minDfa").collapse("show");
+                }
 
                 // fill the statistics div
                 var alpha = [];
@@ -78,12 +69,41 @@
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
                 $("#simpleRegexDisplay").text(parser.simpleInput);
                 $("#origRegexDisplay").text(parser.origInput);
-                $("#autSizeDisplay").text(minDFA.length);
+                $("#autSizeDisplay").text(minDfa.length);
+                $("#btnUpdate").prop("disabled", false).click(function() {
+                    renameStates(nfa); renameStates(minDfa); renameStates(dfa);
+                    updateAutomatonNames(nfa, dfa, minDfa);
+                });
             } catch (e) {
                 console.log("An exception occurred");
                 console.log(e);
                 console.log(e.stack);
             }
+        }
+
+        function updateAutomatonNames(nfa, dfa, minDfa) {
+            var elem, tikz;
+
+            if ($("#showNFA").is(":checked")) {
+                elem = $("#nfa");
+                tikz = generateCode(nfa);
+                elem.find("textarea").val(tikz);
+                fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
+                elemData.get("nfa").canvasCntrl.drawAutomaton();
+            }
+            if ($("#showDFA").is(":checked")) {
+                elem = $("#dfa");
+                tikz = generateCode(dfa);
+                elem.find("textarea").val(tikz);
+                fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
+                elemData.get("dfa").canvasCntrl.drawAutomaton();
+            }
+
+            elem = $("#minDfa");
+            tikz = generateCode(minDfa);
+            elem.find("textarea").val(tikz);
+            fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
+            elemData.get("minDfa").canvasCntrl.drawAutomaton();
         }
 
         function revealElem(elem, anchor, showText, hideText) {
@@ -99,7 +119,7 @@
 
         function fillResult(elem, automaton) {
             var id = elem.attr("id");
-            data = elemData.get(id);
+            var data = elemData.get(id);
 
             if (!data.initialized) {
                 if (id != "minDfa") {// create the elements by cloning the min dfa prototype
@@ -223,6 +243,12 @@
             <tr>
                 <td class="left">Start numbering at: </td>
                 <td class="left" colspan="2"><input type="number" id="numberStart" value="0"></td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <button type="button" class="btn btn-primary" style="width:40%; margin-top:5px !important"
+                            disabled id="btnUpdate">Update automaton</button>
+                </td>
             </tr>
             <tr>
                 <td style="padding-top:15px !important" class="left" colspan="1">
