@@ -12,7 +12,6 @@
     <script src="lib/jquery.mousewheel.min.js"></script>
     <!-- Bootstrap javascript and css-->
     <link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap.min.css">
-    <!--<link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap-theme.min.css">-->
     <script src="lib/bootstrap-3.3.6/js/bootstrap.min.js"></script>
 
     <script type="text/javascript">
@@ -59,7 +58,7 @@
                 $("#result").show();
 
                 if ( !$("#showNFA").is(":checked") && !($("showDFA").is(":checked")) ) {
-                    $("#minDfa").collapse("show");
+//                    $("#minDfa").collapse("show");
                 }
 
                 // fill the statistics div
@@ -109,13 +108,27 @@
         function revealElem(elem, anchor, showText, hideText) {
             elem.collapse("toggle" );
 
+            var arr = ["nfa", "dfa", "minDfa"];
+            if (arr.indexOf(elem.attr("id")) > 0) {
+                removeElem(arr, elem.attr("id"));
+                for (var toHide of arr) {
+                    var elemToHide = $("#" + toHide);
+                    if (elemToHide.attr("aria-expanded") == "true") {
+                        elemToHide.collapse("hide");
+                        var header = $("#" + toHide + "Header");
+                        header.text(header.text().replace("▲", "▼"));
+                    }
+                }
+            }
+
             if (elem.attr("aria-expanded") == "true") {
                 anchor.text(hideText);
             } else {
                 anchor.text(showText);
             }
-        }
 
+            window.scroll(0, elem.offset().top);
+        }
 
         function fillResult(elem, automaton) {
             var id = elem.attr("id");
@@ -151,9 +164,19 @@
                     fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
                 });
 
-                // add listener for scrolling on reveal
-                elem.on("shown.bs.collapse", function() {
-                   window.scroll(0, $("#"+id + "Div").offset().top);
+                elem.find("#btnClipboard").click(function() {
+                    tikzDispl.select();
+                    document.execCommand("copy");
+
+                    if (window.getSelection) {
+                        if (window.getSelection().empty) {  // Chrome
+                            window.getSelection().empty();
+                        } else if (window.getSelection().removeAllRanges) {  // Firefox
+                            window.getSelection().removeAllRanges();
+                        }
+                    } else if (document.selection) {  // IE?
+                        document.selection.empty();
+                    }
                 });
 
                 data.initialized = true;
@@ -208,22 +231,23 @@
 
 
 <body>
-<h1>Regex2Tikz</h1>
-<em>A simple tool for converting a regular expression into TIKZ code for its corresponding automatons.</em>
+<h1>Regex<em>2</em>Ti<em>k</em>Z</h1>
 <p>
+<em>A simple tool for converting a regular expression into Ti<em>k</em>Z code for the corresponding automaton.</em>
+</p>
 <div class="group" id="input">
     <div id="inputInner">
-        <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div><br>
-        <input type="text" id="regex" value="(a|b)*c" autofocus class="inputElement" list="regexList"><br> <!-- replace value with placeholder="(a|b)*c" in release-->
+        <div id="inputPrompt"><b>Start by inserting a regular expression.</b></div>
+        <input type="text" id="regex" placeholder="(a|b)*c" autofocus class="inputElement" list="regexList">
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
 
-    <hr width="75%">
+    <hr width="75%" class="split1">
 
-    <span id="optionShowHide" class="spoilerLink"
+    <b id="optionShowHide" class="spoilerLink"
           onclick="revealElem($('#options'), $('#optionShowHide'), '[+] Show options', '[-] Hide options');">
         [+] Show options
-    </span>
+    </b>
 
     <div id="options" class="collapse left">
         <table><tbody>
@@ -266,12 +290,12 @@
         </tbody></table>
     </div>
 
-    <hr width="75%">
+    <hr width="75%" class="split1">
 </div>
 <div hidden id="statistics" class="group" style="text-align:center">
-    <h4>Statistics</h4>
-    <hr width="50%">
-    <table>
+    <h4>Info</h4>
+    <hr width="50%" class="split1">
+    <table style="margin-bottom:5px">
         <tr>
             <td class="left">Original expression: </td>
             <td id="origRegexDisplay" class="left"></td>
@@ -305,14 +329,14 @@
 
     <div class="group" id="minDfaDiv">
         <h2 id="minDfaHeader" class="spoilerLink"
-            onclick="revealElem($('#minDfa'), $('#minDFAHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
+            onclick="revealElem($('#minDfa'), $('#minDfaHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
             Minimized DFA &#x25BC;</h2>
 
         <div id="minDfa" class="collapse">
             <hr width="90%">
             <ul class="nav nav-tabs">
                 <li class="active">
-                    <a href="#tikz_minDfa" data-toggle="tab" id="tikztab_minDfa">TIKZ Code</a>
+                    <a href="#tikz_minDfa" data-toggle="tab" id="tikztab_minDfa">Ti<em>k</em>Z Code</a>
                 </li>
                 <li>
                     <a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX: Preview</a>
@@ -324,7 +348,8 @@
 
             <div class="tab-content">
                 <div class="tab-pane active" id="tikz_minDfa">
-                    <textarea rows="20" cols="60" disabled class="autDisplay"></textarea>
+                    <textarea rows="20" cols="60" class="autDisplay" onclick="this.focus(); this.select();"></textarea><br>
+                    <button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
                 </div>
                 <div class="tab-pane" id="latex_minDfa">
                     <img src="" class="autDisplay"/> <br>
@@ -332,18 +357,21 @@
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
                 </div>
                 <div class="tab-pane" id="structure_minDfa">
-                    <div class="left canvasControl">
-                        <label><input type="checkbox" id="cbGrid"> Show Grid</label>
-                        <button type="button" class="btn btn-default" id="btnZoomIn">+</button>
-                        <button type="button" class="btn btn-default" id="btnZoomOut">-</button>
-                        <button type="button" class="btn btn-default" id="btnCenter">Center</button>
-                        <button type="button" class="btn btn-default" id="btnAlign">Align to grid</button>
-                        <label>Snap to <select id="slSnap">
+                    <div class="canvasControl">
+                        <table><tbody><tr>
+                        <td><label><input type="checkbox" id="cbGrid"> Show Grid</label></td>
+                        <td><button type="button" class="btn btn-default" id="btnZoomIn">+</button>
+                        <button type="button" class="btn btn-default" id="btnZoomOut">-</button></td>
+                        <td><button type="button" class="btn btn-default" id="btnCenter">Center</button>
+                        <button type="button" class="btn btn-default" id="btnAlign">Align to grid</button></td>
+                        <td><label>Snap to <select id="slSnap">
                             <option value="grid">Grid</option>
                             <option value="neighbour">Neighbour</option>
                             <option value="none">Nothing</option>
-                        </select></label>
-                    </div><hr>
+                        </select></label></td>
+                        </tr></tbody></table>
+                    </div>
+                    <hr class="split2">
                     <canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
                 </div>
             </div>

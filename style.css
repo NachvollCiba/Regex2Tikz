@@ -47,21 +47,28 @@ input:disabled+label {
     text-decoration: none !important;
 }
 
-.noscroll {
-    overflow: hidden;
+.canvasControl {
+    margin-top: 10px;
+    margin-bottom: 5px;
 }
 
-.canvasControl {
-    margin-top: 5px;
+
+.canvasControl td {
+    margin-left: 5px;
+    padding-left: 5px;
+    margin-right: 5px;
+    padding-right: 5px;
+    border-left: solid #bcbcbc 1px;
+    border-right: solid #bcbcbc 1px;
 }
+
 
 .stateCanvas {
     border: solid 1px black;
 }
 
 .autDisplay {
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin:15px;
 }
 
 .btn-primary {
@@ -93,6 +100,16 @@ input:disabled+label {
     clear:both;
 }
 
+.split1 {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.split2 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 #input {
     margin-top:30px;
 }
@@ -104,6 +121,8 @@ input:disabled+label {
 
 #inputPrompt {
     text-align: center;
+    margin-bottom: 3px;
+    margin-top: 8px;
 }
 
 .inputElement {
@@ -123,5 +142,11 @@ input:disabled+label {
 }
 
 #optionShowHide {
-    font-size: 12pt;
+    font-size: 10pt;
 }
+
+#result .collapsing {
+    -webkit-transition: none;
+    transition: none;
+}
+
