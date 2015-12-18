@@ -443,8 +443,6 @@ function CanvasController(canvas, automaton, controlElem) {
         cntrl.changelistener(selected);
     };
 
-
-
     this.spatialIndex = function(state) {
         var s = SNAP_RAD;
 
@@ -457,13 +455,6 @@ function CanvasController(canvas, automaton, controlElem) {
         return {x: [x1, x2], y: [y1, y2]};
     };
 
-    this.addToSpatial = function(state, map, idx) {
-        if (!map.has(idx)) {
-            map.set(idx, new Set());
-        }
-        map.get(idx).add(state);
-
-    };
 
     function updateTransitionDirs(state) {
         state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
@@ -505,113 +496,18 @@ function CanvasController(canvas, automaton, controlElem) {
             updateTransitionDirs(state);
         }
 
-
         // update spatial data structure
-        var spatialIdx = this.spatialIndex(state);
-        var changed = false;
-
-        if (state.spatial == null) {
-            state.spatial = spatialIdx;
-            this.addToSpatial(state, this.spatial.xMap, spatialIdx.x[0]);
-            this.addToSpatial(state, this.spatial.xMap, spatialIdx.x[1]);
-
-            this.addToSpatial(state, this.spatial.yMap, spatialIdx.y[0]);
-            this.addToSpatial(state, this.spatial.yMap, spatialIdx.y[1]);
-
-            changed = true;
-        } else {
-            if (spatialIdx.x[0] != state.spatial.x[0]) {
-                this.spatial.xMap.get(state.spatial.x[0]).delete(state);
-                this.addToSpatial(state, this.spatial.xMap, spatialIdx.x[0]);
-                changed = true;
-            }
-            if (spatialIdx.x[1] != state.spatial.x[1]) {
-                this.spatial.xMap.get(state.spatial.x[1]).delete(state);
-                this.addToSpatial(state, this.spatial.xMap, spatialIdx.x[1]);
-                changed = true;
-            }
-            if (spatialIdx.y[0] != state.spatial.y[0]) {
-                this.spatial.yMap.get(state.spatial.y[0]).delete(state);
-                this.addToSpatial(state, this.spatial.yMap, spatialIdx.y[0]);
-                changed = true;
-            }
-            if (spatialIdx.y[1] != state.spatial.y[1]) {
-                this.spatial.yMap.get(state.spatial.y[1]).delete(state);
-                this.addToSpatial(state, this.spatial.yMap, spatialIdx.y[1]);
-                changed = true;
-            }
-        }
-
-        state.spatial = spatialIdx;
-        return changed;
-    };
-
-    this.findMinDisStateSameCol = function(state) {
-        var x1 = state.spatial.x[0]; var x2 = state.spatial.x[1];
-        var minDis = Infinity;
-        var minState = null;
-
-        this.spatial.xMap.get(x1).forEach(function(other) {
-            if (other != state) {
-                var dis = Math.abs(state.position[1] - other.position[1]);
-
-                if (dis < minDis) {
-                    minDis = dis;automaton =
-                        minState = other;
-                }
-            }
-        });
-
-        this.spatial.xMap.get(x2).forEach(function(other) {
-            if (other != state) {
-                var dis = Math.abs(state.position[1] - other.position[1]);
-
-                if (dis < minDis) {
-                    minDis = dis;
-                    minState = other;
-                }
-            }
-        });
-
-        return minState;
-    };
-
-    this.findMinDisStateSameRow = function(state) {
-        var y1 = state.spatial.y[0]; var y2 = state.spatial.y[1];
-        var minDis = Infinity;
-        var minState = null;
-
-        this.spatial.yMap.get(y1).forEach(function(other) {
-            if (other != state) {
-                var dis = Math.abs(state.position[0] - other.position[0]);
-
-                if (dis < minDis) {
-                    minDis = dis;
-                    minState = other;
-                }
-            }
-        });
-
-        this.spatial.yMap.get(y2).forEach(function(other) {
-            if (other != state) {
-                var dis = Math.abs(state.position[0] - other.position[0]);
-
-                if (dis < minDis) {
-                    minDis = dis;
-                    minState = other;
-                }
-            }
-        });
-
-        return minState;
+        this.spatial.move(state);
     };
 
     this.buildSpatial = function() {
-        this.spatial = {xMap: new Map(), yMap: new Map()};
+        var spatialStruc = new SpatialStruct(SNAP_RAD);
 
-        for (var i = 0; i < this.automaton.length; i++) {
-            this.updateStatePositional(this.automaton[i]);
-        }
+        this.automaton.forEach(function(state) {
+            spatialStruc.put(state);
+        });
+
+        this.spatial = spatialStruc;
     };
 
     // listener
@@ -644,8 +540,8 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     function findAligned(state) {
-        cntrl.xAligned = cntrl.findMinDisStateSameRow(state);
-        cntrl.yAligned = cntrl.findMinDisStateSameCol(state);
+        cntrl.xAligned = cntrl.spatial.xNeighbour(state);
+        cntrl.yAligned = cntrl.spatial.yNeighbour(state);
     }
 
     this.canvasMouseDown = function(event) {
@@ -716,22 +612,21 @@ function CanvasController(canvas, automaton, controlElem) {
                 }
 
                 // update aligned states
-                if (cntrl.updateStatePositional(selected)) {
-                    findAligned(selected);
+                cntrl.updateStatePositional(selected);
+                findAligned(selected);
 
-                    if (cntrl.snap == "neighbour") {
-                        if (cntrl.xAligned != null) {
-                            selected.position[1] = cntrl.xAligned.position[1];
-                            cntrl.updateStatePositional(selected);
-                        }
-
-                        if (cntrl.yAligned != null) {
-                            selected.position[0] = cntrl.yAligned.position[0];
-                            cntrl.updateStatePositional(selected);
-                        }
-
-                        locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
+                if (cntrl.snap == "neighbour") {
+                    if (cntrl.xAligned != null) {
+                        selected.position[1] = cntrl.xAligned.position[1];
+                        cntrl.updateStatePositional(selected);
                     }
+
+                    if (cntrl.yAligned != null) {
+                        selected.position[0] = cntrl.yAligned.position[0];
+                        cntrl.updateStatePositional(selected);
+                    }
+
+                    locked = {x: cntrl.yAligned != null, y: cntrl.xAligned != null};
                 }
             } else { // move the camera
                 cntrl.camera.x += deltaX;
