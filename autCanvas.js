@@ -100,6 +100,13 @@ function CanvasController(canvas, automaton, controlElem) {
         var posX =  state.position[0] * this.camera.zoom + this.camera.x;
         var posY = -state.position[1] * this.camera.zoom + this.camera.y;
 
+        var width = this.canvas[0].width; var height = this.canvas[0].height;
+
+        if (posX < -realRad || posX > width + realRad ||
+            posY < -realRad || posY > height + realRad) {
+            return; // state is not visible
+        }
+
         ctx.strokeStyle = "#000000";
         if (state == this.moving) {
             ctx.fillStyle = "#e5ecff";
@@ -117,7 +124,6 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         ctx.fill();
-
         ctx.stroke();
 
         if (state.isStart) {
@@ -143,26 +149,39 @@ function CanvasController(canvas, automaton, controlElem) {
         var posX =  state.position[0] * this.camera.zoom + this.camera.x;
         var posY = -state.position[1] * this.camera.zoom + this.camera.y;
 
+        var width = this.canvas[0].width; var height = this.canvas[0].height;
+        var startVisible =
+            posX >= -realRad || posX <= width + realRad ||
+            posY >= -realRad || posY <= height + realRad;
+
         ctx.beginPath();
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2;
 
         // draw self loops
         if (state.loop != null) {
-            this.drawLoop(ctx, posX, posY, state.loop.placement, generateAlphabetString(state.loop.symbs));
+            this.drawLoop(ctx, posX, posY, state.loop.placement, state.loop.symbs);
         }
 
         // draw transition lines
         for (var entry of state.outgoing.entries()) {
             var nextState = entry[0];
-            var label = generateAlphabetString(entry[1].symbs, "ε");
+            var label = entry[1].symbs;
 
             var otherX =  nextState.position[0] * this.camera.zoom + this.camera.x;
             var otherY = -nextState.position[1] * this.camera.zoom + this.camera.y;
 
+            var endVisible =
+                otherX >= -realRad || otherX <= width + realRad ||
+                otherY >= -realRad || otherY <= height + realRad;
+
+            if (!startVisible && !endVisible) {
+                return; // transition is not visible
+            }
+
             if (state.incoming.has(nextState)) {
                 this.drawBended(ctx, state.position, nextState.position,
-                    entry[1].placement, generateAlphabetString(entry[1].symbs))
+                    entry[1].placement, entry[1].symbs)
             } else {
                 var dir = unitVector(vecDifference(nextState.position, state.position));
 
@@ -209,11 +228,12 @@ function CanvasController(canvas, automaton, controlElem) {
 
         var posX =  this.moving.position[0] * this.camera.zoom + this.camera.x;
         var posY = -this.moving.position[1] * this.camera.zoom + this.camera.y;
+        var otherX, otherY;
 
         // draw lines to aligned states
         if (this.xAligned != null) {
-            var otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
-            var otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
+            otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
+            otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
 
             ctx.beginPath();
             ctx.lineWidth = 3;
@@ -225,8 +245,8 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         if (this.yAligned != null) {
-            var otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
-            var otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
+            otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
+            otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
 
             ctx.beginPath();
             ctx.lineWidth = 3;
@@ -447,13 +467,14 @@ function CanvasController(canvas, automaton, controlElem) {
 
     function updateTransitionDirs(state) {
         state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
+        var dir;
 
         for (var entry of state.outgoing.entries()) {
-            var dir = DIRECTIONS[discreetDirection(state.position, entry[0].position)];
+            dir = DIRECTIONS[discreetDirection(state.position, entry[0].position)];
             removeElem(state.freeDirs, dir);
         }
         for (var nextState of state.incoming) {
-            var dir = DIRECTIONS[discreetDirection(state.position, nextState.position)];
+            dir = DIRECTIONS[discreetDirection(state.position, nextState.position)];
             removeElem(state.freeDirs, dir);
         }
 

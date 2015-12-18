@@ -25,21 +25,24 @@ function computeStateMeta(nfa) {
     nfa.forEach(function (state) {
         var loopSymbols = new Set();
 
-        for (var symb in state.transitions) {
-            for (var i = 0; i < state.transitions[symb].length; i++) {
-
-                var nextState = state.transitions[symb][i];
+        for (var entry of state.transitions.entries()) {
+            var symb = entry[0] == EPS? $("#emptySymb").val() : entry[0];
+            //const emptyWord = typeof(eps) == "undefined"? $("#emptySymb").val() : eps;
+            for (var nextState of entry[1]) {
 
                 if (nextState == state) {
                     loopSymbols.add(symb);
                 } else {
                     var dir = discreetDirection(state.position, nextState.position);
 
+                    // add the edge to the incoming and outgoing sets
+                    var outgoing = state.outgoing.get(nextState);
                     if (!state.outgoing.has(nextState)) {
-                        state.outgoing.set(nextState, {
-                            symbs: new Set(), placement: DIRECTIONS[(dir+1) % DIRECTIONS.length]});
+                        outgoing = {symbs: symb, placement: DIRECTIONS[(dir+1) % DIRECTIONS.length]};
+                        state.outgoing.set(nextState, outgoing);
+                    } else {
+                        outgoing.symbs += ", " + symb;
                     }
-                    state.outgoing.get(nextState).symbs.add(symb);
                     nextState.incoming.add(state);
 
                     // mark the direction as occupied
@@ -49,9 +52,10 @@ function computeStateMeta(nfa) {
             }
         }
 
+        // add loop information, if transition was a loop
         if (loopSymbols.size > 0) {
             state.loop = {
-                symbs: loopSymbols,
+                symbs: generateAlphabetString(loopSymbols),
                 placement: state.freeDirs.length > 0 ? state.freeDirs.pop() : "left"
             };
         }
@@ -130,7 +134,7 @@ function generateTransitionsCode(state) {
     // create code for loop
     if (state.loop != null) {
         result += "\tedge [loop " + state.loop.placement + "] node [" + state.loop.placement
-            + "] {\$" + generateAlphabetString(state.loop.symbs) +  "\$} ()\n";
+            + "] {\$" + state.loop.symbs +  "\$} ()\n";
     }
 
     // create code for all other transitions
@@ -143,7 +147,7 @@ function generateTransitionsCode(state) {
             result += "\tedge node [" + entry[1].placement + "] {\$";
         }
 
-        result +=  generateAlphabetString(entry[1].symbs) + "\$} (" + toName + ")\n";
+        result +=  entry[1].symbs + "\$} (" + toName + ")\n";
     }
 
     return result;

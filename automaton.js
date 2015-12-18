@@ -11,9 +11,10 @@ function nfa2dfa(nfa, alphabet, withSink) {
         return [];
     }
 
+
     // build the eps-closure of the start state
     var startClosure = epsClosure(nfa[0]);
-    var newStart = new State(potStateName(startClosure[0]), true, startClosure[1]);
+    var newStart = new State(powStateName(startClosure[0]), true, startClosure[1]);
     var dfa = [newStart];
 
     var stack = []; // stack of state sets to work on
@@ -29,9 +30,8 @@ function nfa2dfa(nfa, alphabet, withSink) {
             var symbConnected = new Set();
             var isFinal = false;
 
-            // collect all states that are connected with the alphabet symbol
+            // collect all states that are connected with the alphabet symbol in the original automaton
             for (var curState of next[0]) {
-
                 curState.nextStates(symb).forEach(function (nextState) {
                     isFinal |= nextState.isFinal;
                     symbConnected.add(nextState);
@@ -39,29 +39,27 @@ function nfa2dfa(nfa, alphabet, withSink) {
             }
 
             // build the eps closure of the set
-            var epsConnected = new Set();
+            var epsConnected = [];
             for (var conState of symbConnected) {
                 var closure = epsClosure(conState);
-
-                for (var epsState of closure[0]) {
-                    epsConnected.add(epsState);
-                }
-
+                epsConnected.push(closure[0]);
                 isFinal |= closure[1];
             }
 
-            for (var epsConState of epsConnected) {
-                symbConnected.add(epsConState);
+            // add all epsilon closures to the set of connected states
+            for (var epsClosureSet of epsConnected) {
+                for (var epsConnected of epsClosureSet) {
+                    symbConnected.add(epsConnected);
+                }
             }
 
             if (symbConnected.size > 0) {
-                var stateName = potStateName(symbConnected);
+                var stateName = powStateName(symbConnected);
 
-                // create the set state if it does not exist
                 var potState = null;
-                if (potStates.has(stateName)) {
+                if (potStates.has(stateName)) { // retrieve the state
                     potState = potStates.get(stateName);
-                } else {
+                } else { // create the state and put it on the stack
                     potState = new State(stateName, false, isFinal);
                     stack.push([symbConnected, stateName]);
                     potStates.set(stateName,potState);
@@ -90,6 +88,7 @@ function generateSinkState(automaton, alphabet) {
         sink.addNextState(symb, sink); // add self-loops under every symbol
     }
 
+    // create a transition to the sink state for every symbol that has no transition in a state
     var sinkIsReached = false;
     automaton.forEach(function(state) {
         for (var symb of alphabet) {
@@ -100,42 +99,39 @@ function generateSinkState(automaton, alphabet) {
         }
     });
 
+    // add the sink state to the automaton if it is not redundant
     if (sinkIsReached) {
         automaton.push(sink);
     }
 }
 
-function potStateName(stateSet) {
+// build a unique name for a powerset state
+function powStateName(stateSet) {
     var stateNames = [];
-    stateSet.forEach(function (state) {
+    stateSet.forEach(function (state) { // collect all state names in an array
         stateNames.push(state.name);
     });
 
-    var res = "";
-    stateNames.sort().forEach(function (str) {
-        res += str;
-    });
-    return res;
+    return stateNames.sort().join();
 }
 
-function epsClosure(state, closure) {
-    if (typeof(closure) === 'undefined') {
+// compute the epsilon closure of a state
+var closure;
+var hasFinal;
+function epsClosure(state, recursive) {
+    if (typeof(recursive) === 'undefined') { // reset closure on top-level recursion call
         closure = new Set();
+        hasFinal = false;
     }
-    var hasFinal = state.isFinal;
 
+    hasFinal |= state.isFinal;
     closure.add(state); // every state is trivially part of its own eps-closure
 
     // add the eps-closure of every e-connected state
     var epsConnected = state.nextStates(EPS);
-    for (var i = 0; i < epsConnected.length; i++) {
-        if (!closure.has(epsConnected[i])) {
-            var nextClosure = epsClosure(epsConnected[i], closure);
-
-            for (var epsState of nextClosure[0]) {
-                closure.add(epsState);
-            }
-            hasFinal |= nextClosure[1];
+    for (var epsConState of epsConnected) {
+        if (!closure.has(epsConState)) {
+            epsClosure(epsConState, closure);
         }
     }
 
@@ -143,8 +139,9 @@ function epsClosure(state, closure) {
 }
 
 function minimize(dfa) {
-    // initialize map of equivalent states
-    var eqStatesMap = new Map();
+    var eqStatesMap = new Map(); // maps each state to the set of (myhill-neurode) equivalent states
+
+    // initialization: every state is equivalent to every other state with the same isFinal flag
     dfa.forEach(function (state) {
         var eqStatesSet = new Set();
 
@@ -164,14 +161,14 @@ function minimize(dfa) {
         dfa.forEach(function (state) {
             var eqStates = eqStatesMap.get(state);
             eqStates.forEach(function (eqState) {
-                for (var symb in state.transitions) {
-                    // input is a dfa -> list of next states is always of length <= 1
-                    var next = state.nextStates(symb);
-                    var eqNext = eqState.nextStates(symb);
-                    if (eqNext.length > 0) {
-                        next = next[0];
-                        eqNext = eqNext[0];
-                        if (!eqStatesMap .get(next).has(eqNext)) {
+                for (var symb of state.transitions.keys()) {
+                    // automaton is deterministic => there is always either 0 or 1 next state for each symbol
+                    var next = state.randomNextState(symb);
+                    var eqNext = eqState.randomNextState(symb);
+
+                    if (eqNext !== null) {
+                        if(!eqStatesMap.get(next).has(eqNext)) {
+                            // the following states are not equivalent => the starting states are not equivalent
                             eqStates.delete(eqState);
                             eqStatesMap.get(eqState).delete(state);
                             changed = true;
@@ -186,12 +183,13 @@ function minimize(dfa) {
         });
     }
 
-    // create new states
+// create new states
     var newStatesMap = new Map(); // old state => new state
     var newStates = new Map(); //  new state name => new state
     for (var entry of eqStatesMap.entries()) {
-        var stateName = potStateName(entry[1]);
-        if (typeof(newStates.get(stateName)) == "undefined") {
+        var stateName = powStateName(entry[1]);
+        if (!(newStates.has(stateName))) {
+            // build the new state
             var isStart = false;
             var isFinal = false;
             entry[1].forEach(function (eqState) {
@@ -208,16 +206,19 @@ function minimize(dfa) {
         newStatesMap.set(entry[0], newState);
     }
 
-    // add transitions to the new states
+// add transitions to the new states
     var minDFA = [];
     for (entry of newStatesMap.entries()) {
         // add all transitions
-        for (var symb in entry[0].transitions) {
-            entry[1].addNextState(symb, newStatesMap.get(entry[0].nextStates(symb)[0]));
+        for (var symb of entry[0].transitions.keys()) {
+            var next = entry[0].randomNextState(symb);
+            if (next !== null) {
+                entry[1].addNextState(symb, newStatesMap.get(next));
+            }
         }
     }
 
-    // assemble the new states to an dfa array
+// assemble the new states to an dfa array
     for (var state of newStates.values()) {
         if (state.isStart) {
             minDFA.unshift(state);
@@ -226,7 +227,7 @@ function minimize(dfa) {
         }
     }
 
-    // rename the states
+// rename the states
     renameStates(minDFA);
     return minDFA;
 }
@@ -248,17 +249,16 @@ function renameStates(states) {
 
 
 function listOfConnectedStates(state) {
-    var conStates = new Set();
-    for (var symb in state.transitions) {
-        // add all next states to the conStates set
-        for (y = 0; y < state.transitions[symb].length; y++) {
-            var nextState = state.transitions[symb][y];
-            if (nextState != state) {
-                conStates.add(nextState);
+    var allConStates = new Set();
+    for (var conStates of state.transitions.values()) {
+        for (var conState of conStates) {
+            if (conState != state) {
+                allConStates.add(conState);
             }
         }
     }
-    return conStates;
+
+    return allConStates;
 }
 
 // class for NFA states
@@ -274,32 +274,36 @@ function State(name, isStart, isFinal) {
     this.isStart = isStart;
     this.isFinal = isFinal;
 
-    this.transitions = Object.create(null);
+    this.transitions = new Map();
 
     this.nextStates = function (symb) { // returns the list of states following after the symbol
-        if (symb in this.transitions) {
-            return this.transitions[symb];
+        if (this.transitions.has(symb)) {
+            return this.transitions.get(symb);
         } else {
-            return [];
+            return new Set();
         }
     };
 
     this.addNextState = function (symb, nextState) { // adds a transition under symb to nextState
-        if (! (symb in this.transitions)) {
-            this.transitions[symb] = [];
+        if (typeof(nextState) == "undefined") {
+            throw new Error("Cannot add transition to undefined");
         }
 
-        this.transitions[symb].push(nextState);
+        var stateSet = this.transitions.get(symb);
+        if (! (this.transitions.has(symb))) {
+            stateSet = new Set();
+            this.transitions.set(symb, stateSet);
+        }
+
+        stateSet.add(nextState);
     };
 
-    this.hasTransitionTo = function (otherState) {
-        for (symb in this.transitions) {
-            if (this.transitions[symb].indexOf(otherState) > -1) {
-                return true;
-            }
+    this.randomNextState = function(symb) {
+        for (var state of this.nextStates(symb)) {
+            return state;
         }
 
-        return false;
+        return null; // state set is empty
     };
 
     this.merge = function(state) {
@@ -321,7 +325,7 @@ function RegexParser(regex) {
      * atom -> alphanum | (regex)
      */
 
-    // PARSER SETUP
+        // PARSER SETUP
     this.origInput = regex.replace(/\s/g, ""); // remove all whitespace
     this.input = rewriteExpression(this.origInput);
     this.simpleInput = this.input.slice(0);
@@ -459,9 +463,10 @@ function RegexParser(regex) {
          */
 
         var next = this.popInput();
+        var nfa;
 
         if (next == "(") {
-            var nfa = this.regex();
+            nfa = this.regex();
 
             next = this.popInput();
             if (next != ")") {
@@ -474,7 +479,7 @@ function RegexParser(regex) {
             next = next === '$'? EPS : next;
 
             _in.addNextState(next, out);
-            var nfa = [_in, out];
+            nfa = [_in, out];
         } else {
             throw ("Expected '(' or any alphanumeric character, got " + next);
         }
@@ -521,7 +526,7 @@ function cloneAutomaton(aut) {
 }
 
 function validSymbol(symb){
-    // for now, only allow alphanumeric strings to be accepted
+    // for now, only allow alphanumeric strings to be accepted TODO necessary?
 
     if (symb.length > 1) {
         return false; // no strings as symbols
@@ -564,6 +569,7 @@ function rewriteExpression(expr) { // rewrite a regex as a "simple expression" u
 
     return simplifiedExpr;
 
+    // find the substring of an expression (either single symbol or parenthesis expr ( ... )
     function findSubstring() {
         var parCounter = 0;
         var currentIdx = idx-1;
