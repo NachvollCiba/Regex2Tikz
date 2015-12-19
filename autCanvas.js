@@ -27,6 +27,7 @@ function CanvasController(canvas, automaton, controlElem) {
     this.loadAutomaton = function(aut) {
         this.automaton = aut;
         this.buildSpatial();
+        this.prerender();
 
         this.snap = this.control.find("#slSnap").val();
         this.showGrid = this.control.find("#cbGrid").is(":checked");
@@ -44,14 +45,9 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.font = fontsize + "px Arial";
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        for (var i = 0; i < this.automaton.length; i++) {
-            var state = this.automaton[i];
-
-            this.drawTransitions(ctx, state);
-
-            this.drawAlignment(ctx, state);
-            this.drawState(ctx, state);
-        }
+        this.drawStates(ctx);
+        this.drawTransitions(ctx);
+        this.drawAlignment(ctx);
     };
 
     this.drawGrid = function(ctx) {
@@ -95,47 +91,86 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.stroke();
     };
 
-    this.drawState = function(ctx, state) {
+    this.drawStates = function(ctx) {
         var realRad = STATE_RAD * this.camera.zoom;
-        var posX =  state.position[0] * this.camera.zoom + this.camera.x;
-        var posY = -state.position[1] * this.camera.zoom + this.camera.y;
-
+        var finalRad = Math.max(realRad - 3, 0);
+        var zoom = this.camera.zoom;
+        var offsetX = this.camera.x; var offsetY = this.camera.y;
         var width = this.canvas[0].width; var height = this.canvas[0].height;
+        var moving = this.moving;
 
-        if (posX < -realRad || posX > width + realRad ||
-            posY < -realRad || posY > height + realRad) {
-            return; // state is not visible
-        }
-
+        // draw the actual STATES
         ctx.strokeStyle = "#000000";
-        if (state == this.moving) {
-            ctx.fillStyle = "#e5ecff";
-            ctx.lineWidth = 1;
-        } else {
-            ctx.fillStyle = "#f2f2f2";
-            ctx.lineWidth = 1;
-        }
-
+        ctx.fillStyle = "#f2f2f2";
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+        this.automaton.forEach(function(state) {
+            var posX = state.position[0] * zoom + offsetX;
+            var posY = -state.position[1] * zoom + offsetY;
 
-        if (state.isFinal) {
-            ctx.arc(posX, posY, Math.max(realRad - 3,0), 0, 2 * Math.PI);
-        }
+            if (posX < -realRad || posX > width + realRad ||
+                posY < -realRad || posY > height + realRad) {
+                return; // state is not visible
+            }
+            if (state == moving) {
+                return;
+            }
 
+            ctx.moveTo(posX + realRad, posY);
+            ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+
+            if (state.isFinal) {
+                ctx.moveTo(posX + finalRad, posY);
+                ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
+            }
+
+            //ctx.drawImage(state.prerendered, posX-realRad, posY-realRad, realRad*2, realRad*2);
+        });
         ctx.fill();
         ctx.stroke();
 
-        if (state.isStart) {
+        // draw the HIGHLIGHTED STATE
+        if (moving !== null) {
+            ctx.strokeStyle = "#000000";
+            ctx.fillStyle = "#e5ecff";
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.lineWidth = 2;
-            this.drawArrow(ctx, posX - 2*realRad, posY, posX - realRad, posY);
+            var posX = moving.position[0] * zoom + offsetX;
+            var posY = -moving.position[1] * zoom + offsetY;
+            ctx.moveTo(posX + realRad, posY);
+            ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
+            if (moving.isFinal) {
+                console.log(moving.isFinal);
+                ctx.moveTo(posX + finalRad, posY);
+                ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
+            }
             ctx.stroke();
+            ctx.fill();
         }
 
+        // draw the STATE NAMES
         ctx.fillStyle = "#000000";
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(toInternalID(state.name), posX, posY);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        this.automaton.forEach(function(state) {
+            var posX = state.position[0] * zoom + offsetX;
+            var posY = -state.position[1] * zoom + offsetY;
+
+            if (posX < -realRad || posX > width + realRad ||
+                posY < -realRad || posY > height + realRad) {
+                return; // state is not visible
+            }
+
+            ctx.fillText(toInternalID(state.name), posX, posY);
+        });
+
+        // draw the INCOMING LINE to the START STATE
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        var posX = this.automaton[0].position[0] * zoom + offsetX;
+        var posY = -this.automaton[0].position[1] * zoom + offsetY;
+        this.drawArrow(ctx, posX - 2 * realRad, posY, posX - realRad, posY);
+        ctx.stroke();
     };
 
     function labelDir(fromState, toState) {
@@ -144,81 +179,123 @@ function CanvasController(canvas, automaton, controlElem) {
         return DIRECTIONS[dir];
     }
 
-    this.drawTransitions = function(ctx, state) {
+    this.drawTransitions = function(ctx) {
         var realRad = STATE_RAD * this.camera.zoom;
-        var posX =  state.position[0] * this.camera.zoom + this.camera.x;
-        var posY = -state.position[1] * this.camera.zoom + this.camera.y;
-
+        var zoom = this.camera.zoom;
+        var offsetX = this.camera.x; var offsetY = this.camera.y;
         var width = this.canvas[0].width; var height = this.canvas[0].height;
-        var startVisible =
-            posX >= -realRad || posX <= width + realRad ||
-            posY >= -realRad || posY <= height + realRad;
+        var moving = this.moving;
+        var that = this;
 
+        // first of all: draw arrows
         ctx.beginPath();
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2;
 
-        // draw self loops
-        if (state.loop != null) {
-            this.drawLoop(ctx, posX, posY, state.loop.placement, state.loop.symbs);
-        }
+        this.automaton.forEach(function(state) {
+            var posX = state.position[0] * zoom + offsetX;
+            var posY = -state.position[1] * zoom + offsetY;
 
-        // draw transition lines
-        for (var entry of state.outgoing.entries()) {
-            var nextState = entry[0];
-            var label = entry[1].symbs;
+            var startVisible =
+                posX >= -realRad || posX <= width + realRad ||
+                posY >= -realRad || posY <= height + realRad;
 
-            var otherX =  nextState.position[0] * this.camera.zoom + this.camera.x;
-            var otherY = -nextState.position[1] * this.camera.zoom + this.camera.y;
-
-            var endVisible =
-                otherX >= -realRad || otherX <= width + realRad ||
-                otherY >= -realRad || otherY <= height + realRad;
-
-            if (!startVisible && !endVisible) {
-                return; // transition is not visible
+            // draw self loops
+            if (state.loop != null) {
+                that.drawLoopArrow(ctx, posX, posY, state.loop.placement, realRad);
             }
 
-            if (state.incoming.has(nextState)) {
-                this.drawBended(ctx, state.position, nextState.position,
-                    entry[1].placement, entry[1].symbs)
-            } else {
-                var dir = unitVector(vecDifference(nextState.position, state.position));
+            // draw transition lines
+            for (var entry of state.outgoing.entries()) {
+                var nextState = entry[0];
+                var label = entry[1].symbs.replace($("#emptySymb").val(), "ε");
 
-                var startX = posX + realRad * dir[0];
-                var startY = posY - realRad * dir[1];
-                var endX = otherX - realRad * dir[0];
-                var endY = otherY + realRad * dir[1];
+                var otherX = nextState.position[0] * zoom + offsetX;
+                var otherY = -nextState.position[1] * zoom + offsetY;
 
-                this.drawArrow(ctx, startX, startY, endX, endY);
+                var endVisible =
+                    otherX >= -realRad || otherX <= width + realRad ||
+                    otherY >= -realRad || otherY <= height + realRad;
 
-                var midX = (posX + (otherX - posX) / 2);
-                var midY = (posY + (otherY - posY) / 2);
-
-                // determine position
-                const offset = LBL_OFFSET * this.camera.zoom;
-                switch(entry[1].placement) {
-                    case "above":
-                        midY -= offset;
-                        break;
-                    case "below":
-                        midY += offset;
-                        break;
-                    case "left":
-                        midX -= offset;
-                        break;
-                    case "right":
-                        midX += offset;
-                        break;
+                if (!startVisible && !endVisible) {
+                    return; // transition is not visible
                 }
 
-                setTextAlign(ctx, entry[1].placement);
-                ctx.fillText(label, midX, midY);
-            }
-        }
+                if (state.incoming.has(nextState)) {
+                    that.drawBendedArrow(ctx, state.position, nextState.position);
+                } else {
+                    var dir = unitVector(vecDifference(nextState.position, state.position));
 
+                    var startX = posX + realRad * dir[0];
+                    var startY = posY - realRad * dir[1];
+                    var endX = otherX - realRad * dir[0];
+                    var endY = otherY + realRad * dir[1];
+
+                    that.drawArrow(ctx, startX, startY, endX, endY);
+                }
+            }
+        });
 
         ctx.stroke();
+
+        // draw transition labels
+        this.automaton.forEach(function(state) {
+            var posX = state.position[0] * zoom + offsetX;
+            var posY = -state.position[1] * zoom + offsetY;
+
+            var startVisible =
+                posX >= -realRad || posX <= width + realRad ||
+                posY >= -realRad || posY <= height + realRad;
+
+            // draw self loops
+            if (state.loop != null) {
+                that.drawLoopLabel(ctx, posX, posY,
+                    state.loop.placement, state.loop.symbs.replace($("#emptySymb").val(), "ε"), realRad);
+            }
+
+            for (var entry of state.outgoing.entries()) {
+                var nextState = entry[0];
+                var label = entry[1].symbs.replace($("#emptySymb").val(), "ε");
+
+                var otherX = nextState.position[0] * zoom + offsetX;
+                var otherY = -nextState.position[1] * zoom + offsetY;
+
+                var endVisible =
+                    otherX >= -realRad || otherX <= width + realRad ||
+                    otherY >= -realRad || otherY <= height + realRad;
+
+                if (!startVisible && !endVisible) {
+                    return; // transition is not visible
+                }
+
+                if (state.incoming.has(nextState)) {
+                    that.drawBendedLabel(ctx, state.position, nextState.position, entry[1].placement, label);
+                } else {
+                    var midX = (posX + (otherX - posX) / 2);
+                    var midY = (posY + (otherY - posY) / 2);
+
+                    // determine position
+                    const offset = LBL_OFFSET * zoom;
+                    switch (entry[1].placement) {
+                        case "above":
+                            midY -= offset;
+                            break;
+                        case "below":
+                            midY += offset;
+                            break;
+                        case "left":
+                            midX -= offset;
+                            break;
+                        case "right":
+                            midX += offset;
+                            break;
+                    }
+
+                    setTextAlign(ctx, entry[1].placement);
+                    ctx.fillText(label, midX, midY);
+                }
+            }
+        });
     };
 
     this.drawAlignment = function(ctx) {
@@ -231,31 +308,28 @@ function CanvasController(canvas, automaton, controlElem) {
         var otherX, otherY;
 
         // draw lines to aligned states
+        ctx.beginPath();
         if (this.xAligned != null) {
             otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
             otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
 
-            ctx.beginPath();
             ctx.lineWidth = 3;
             ctx.strokeStyle = "#A52A2A";
             ctx.moveTo(posX, posY);
             ctx.lineTo(otherX, otherY);
-            ctx.stroke();
-            ctx.strokeStyle = "#000000";
         }
 
         if (this.yAligned != null) {
             otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
             otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
 
-            ctx.beginPath();
             ctx.lineWidth = 3;
             ctx.strokeStyle = "#A52A2A";
             ctx.moveTo(posX, posY);
             ctx.lineTo(otherX, otherY);
-            ctx.stroke();
-            ctx.strokeStyle = "#000000";
         }
+        ctx.stroke();
+        ctx.strokeStyle = "#000000";
     };
 
     this.drawArrow = function (ctx, x1, y1, x2, y2){
@@ -275,7 +349,7 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.lineTo(x - headlen * Math.cos(angle + Math.PI/6), y - headlen * Math.sin(angle + Math.PI/6));
     };
 
-    this.drawBended = function(ctx, pos1, pos2, lblDirection, label) {
+    this.drawBendedArrow = function(ctx, pos1, pos2) {
         const dis = 3*STATE_RAD;// distance in world coordinates
         const angle = 5.75959; // 30°
 
@@ -309,6 +383,30 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.quadraticCurveTo(controlX, controlY, end[0], end[1]);
 
         this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-controlY, end[0]-controlX));
+    };
+
+    this.drawBendedLabel = function(ctx, pos1, pos2, lblDirection, label) {
+        const dis = 3*STATE_RAD;// distance in world coordinates
+        const angle = 5.75959; // 30°
+
+        var dir =  unitVector(vecDifference(pos2, pos1));
+        dir[0] *= STATE_RAD; dir[1] *= STATE_RAD;
+        var start = [pos1[0] + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle), // rotate by angle
+            pos1[1] + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+
+        var end = [pos2[0] - dir[0] * Math.cos(-angle) + dir[1] * Math.sin(-angle), // rotate by angle
+            pos2[1] - dir[0] * Math.sin(-angle) - dir[1] * Math.cos(-angle)];
+
+        var midX = start[0] + (end[0] - start[0]) / 2;
+        var midY = start[1] + (end[1] - start[1]) / 2;
+
+        var ortho = [dir[1], -dir[0]];
+
+        var controlX = midX + ortho[0] * dis;
+        var controlY = midY + ortho[1] * dis;
+
+        controlX =  controlX * this.camera.zoom + this.camera.x;
+        controlY = -controlY * this.camera.zoom + this.camera.y;
 
         // draw label
         var lblX = controlX; var lblY = controlY;
@@ -332,43 +430,36 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.fillText(label, lblX, lblY);
     };
 
-    this.drawLoop = function(ctx, x, y, direction, label) {
-        var realRad = STATE_RAD * this.camera.zoom;
+    this.drawLoopArrow = function(ctx, x, y, direction, realRad) {
         var loopDis = realRad;
         var loopExc = realRad;
-        var lblOffset = LBL_OFFSET * this.camera.zoom;
         const angle = 0.523599; // 30°
 
-
-        var dir, mid, control1, control2, lblPos;
+        var dir, mid, control1, control2;
         switch(direction) {
             case "above":
                 dir = [0,-realRad];
                 mid = [x, y - realRad - loopDis];
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
-                lblPos = [x, mid[1] - lblOffset];
                 break;
             case "below":
                 dir = [0,realRad];
                 mid = [x, y + realRad + loopDis];
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
-                lblPos = [x, mid[1] + lblOffset];
                 break;
             case "left":
                 dir = [-realRad,0];
                 mid = [x - realRad - loopDis, y];
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
-                lblPos = [mid[0] - lblOffset, y];
                 break;
             case "right":
                 dir = [realRad,0];
                 mid = [x + realRad + loopDis, y];
                 control1 = [mid[0], y - loopExc];
                 control2 = [mid[0], y + loopExc];
-                lblPos = [mid[0] + lblOffset, y];
                 break;
         }
 
@@ -383,6 +474,35 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.moveTo(mid[0], mid[1]);
         ctx.quadraticCurveTo(control2[0], control2[1], end[0], end[1]);
         this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-control2[1], end[0]-control2[0]));
+    };
+
+    this.drawLoopLabel = function(ctx, x, y, direction, label, realRad) {
+        var lblOffset = LBL_OFFSET * this.camera.zoom;
+        var loopDis = realRad;
+        var lblPos, mid, dir;
+
+        switch (direction) {
+            case "above":
+                dir = [0,-realRad];
+                mid = y - realRad - loopDis;
+                lblPos = [x, mid - lblOffset];
+                break;
+            case "below":
+                dir = [0,realRad];
+                mid = y + realRad + loopDis;
+                lblPos = [x, mid + lblOffset];
+                break;
+            case "left":
+                dir = [-realRad,0];
+                mid = x - realRad - loopDis;
+                lblPos = [mid - lblOffset, y];
+                break;
+            case "right":
+                dir = [realRad,0];
+                mid = x + realRad + loopDis;
+                lblPos = [mid + lblOffset, y];
+                break;
+        }
 
         setTextAlign(ctx, direction);
         ctx.fillText(label, lblPos[0], lblPos[1]);
@@ -508,6 +628,35 @@ function CanvasController(canvas, automaton, controlElem) {
         });
 
         this.spatial = spatialStruc;
+    };
+
+    this.prerender = function() {
+        var radius = ZOOM_MAX;
+        var posX = radius; var posY = radius;
+
+        this.automaton.forEach(function(state) {
+            state.prerendered = $("<canvas></canvas>").attr("width", radius*2).attr("height", radius*2)[0];
+            var ctx = state.prerendered.getContext("2d");
+            ctx.strokeStyle = "#000000";
+            ctx.fillStyle = "#f2f2f2";
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.arc(posX, posY, radius, 0, 2 * Math.PI);
+
+            if (state.isFinal) {
+                ctx.arc(posX, posY, Math.max(radius - 3,0), 0, 2 * Math.PI);
+            }
+
+            ctx.fill();
+            ctx.stroke();
+
+            var fontsize = ZOOM_MAX;
+            ctx.font = fontsize + "px Arial";
+            ctx.fillStyle = "#000000";
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(toInternalID(state.name), posX, posY);
+        });
     };
 
     // listener

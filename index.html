@@ -110,19 +110,6 @@
         function revealElem(elem, anchor, showText, hideText) {
             elem.collapse("toggle" );
 
-            var arr = ["nfa", "dfa", "minDfa"];
-            if (arr.indexOf(elem.attr("id")) > 0) {
-                removeElem(arr, elem.attr("id"));
-                for (var toHide of arr) {
-                    var elemToHide = $("#" + toHide);
-                    if (elemToHide.attr("aria-expanded") == "true") {
-                        elemToHide.collapse("hide");
-                        var header = $("#" + toHide + "Header");
-                        header.text(header.text().replace("▲", "▼"));
-                    }
-                }
-            }
-
             if (elem.attr("aria-expanded") == "true") {
                 anchor.text(hideText);
             } else {
@@ -162,21 +149,22 @@
                 var renderBtn = elem.find("#btnRender");
                 var tikzDispl = elem.find("textarea");
                 var renderImg = elem.find("img");
-                renderBtn.click(function(event) {
+                renderBtn.click(function() {
                     fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
                 });
 
                 elem.find("#btnClipboard").click(function() {
-                    tikzDispl.select();
-                    document.execCommand("copy");
+                    tikzDispl.select(); // select all the text
+                    document.execCommand("copy"); // copy to clipboard
 
+                    // unselect the text (browser-dependant)
                     if (window.getSelection) {
                         if (window.getSelection().empty) {  // Chrome
                             window.getSelection().empty();
                         } else if (window.getSelection().removeAllRanges) {  // Firefox
                             window.getSelection().removeAllRanges();
                         }
-                    } else if (document.selection) {  // IE?
+                    } else if (document.selection) {  // IE
                         document.selection.empty();
                     }
                 });

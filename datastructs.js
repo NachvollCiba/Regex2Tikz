@@ -50,39 +50,41 @@ function Vector2(x, y) {
 }
 
 function SpatialStruct(gridWidth) {
-    this.xMap = new Map();
-    this.yMap = new Map();
+    this.rows = [[], []];
+    this.cols = [[], []];
     this.gridWidth = gridWidth;
 
     this.put = function(state) {
         var index = spatialIdx(state.position, this.gridWidth);
-        addToSpatial(state, this.xMap, index.x[0]);
-        addToSpatial(state, this.xMap, index.x[1]);
 
-        addToSpatial(state, this.yMap, index.y[0]);
-        addToSpatial(state, this.yMap, index.y[1]);
+        addToSpatial(state, this.rows, index.x[0]);
+        addToSpatial(state, this.rows, index.x[1]);
+
+        addToSpatial(state, this.cols, index.y[0]);
+        addToSpatial(state, this.cols, index.y[1]);
 
         state.spatial = index;
     };
 
     this.move = function(state) {
         var newIdx = spatialIdx(state.position, this.gridWidth);
+
         if (newIdx.x[0] != state.spatial.x[0]) {
-            this.xMap.get(state.spatial.x[0]).delete(state);
-            addToSpatial(state, this.xMap, newIdx.x[0]);
+            removeFromSpatial(state, this.rows, state.spatial.x[0]);
+            addToSpatial(state, this.rows, newIdx.x[0]);
         }
         if (newIdx.x[1] != state.spatial.x[1]) {
-            this.xMap.get(state.spatial.x[1]).delete(state);
-            addToSpatial(state, this.xMap, newIdx.x[1]);
+            removeFromSpatial(state, this.rows, state.spatial.x[1]);
+            addToSpatial(state, this.rows, newIdx.x[1]);
         }
         if (newIdx.y[0] != state.spatial.y[0]) {
-            this.yMap.get(state.spatial.y[0]).delete(state);
-            addToSpatial(state, this.yMap, newIdx.y[0]);
+            removeFromSpatial(state, this.cols, state.spatial.y[0]);
+            addToSpatial(state, this.cols, newIdx.y[0]);
         }
         if (newIdx.y[1] != state.spatial.y[1]) {
-            this.yMap.get(state.spatial.y[1]).delete(state);
-            addToSpatial(state, this.yMap, newIdx.y[1]);
+            removeFromSpatial(state, this.cols, state.spatial.y[1]);
         }
+            addToSpatial(state, this.cols, newIdx.y[1]);
 
         state.spatial = newIdx;
     };
@@ -97,7 +99,7 @@ function SpatialStruct(gridWidth) {
         var minDis = Infinity;
         var minState = null;
 
-        this.yMap.get(y1).forEach(function(other) {
+        this.getColSet(y1).forEach(function(other) {
             if (other != state) {
                 var dis = Math.abs(state.position[0] - other.position[0]);
 
@@ -108,7 +110,7 @@ function SpatialStruct(gridWidth) {
             }
         });
 
-        this.yMap.get(y2).forEach(function(other) {
+        this.getColSet(y2).forEach(function(other) {
             if (other != state) {
                 var dis = Math.abs(state.position[0] - other.position[0]);
 
@@ -132,7 +134,7 @@ function SpatialStruct(gridWidth) {
         var minDis = Infinity;
         var minState = null;
 
-        this.xMap.get(x1).forEach(function(other) {
+        this.getRowSet(x1).forEach(function(other) {
             if (other != state) {
                 var dis = Math.abs(state.position[1] - other.position[1]);
 
@@ -143,7 +145,7 @@ function SpatialStruct(gridWidth) {
             }
         });
 
-        this.xMap.get(x2).forEach(function(other) {
+        this.getRowSet(x2).forEach(function(other) {
             if (other != state) {
                 var dis = Math.abs(state.position[1] - other.position[1]);
 
@@ -157,6 +159,15 @@ function SpatialStruct(gridWidth) {
         return minState;
     };
 
+    this.getRowSet = function(index) {
+        return index >= 0? this.rows[0][index] : this.rows[1][Math.abs(index)];
+    };
+
+    this.getColSet = function(index) {
+        return index >= 0? this.cols[0][index] : this.cols[1][Math.abs(index)];
+    };
+
+
 
     function spatialIdx(pos, s) {
         var x1 = 2 * Math.floor(pos[0] / (2*s));
@@ -168,11 +179,24 @@ function SpatialStruct(gridWidth) {
         return {x: [x1, x2], y: [y1, y2]};
     }
 
-    function addToSpatial(state, map, idx) {
-        if (!map.has(idx)) {
-            map.set(idx, new Set());
+    function addToSpatial(state, arr, idx) {
+        arr = idx >= 0? arr[0] : arr[1];
+        idx = Math.abs(idx);
+
+        for (var i = arr.length; i <= idx; i++) {
+            arr.push(null);
         }
 
-        map.get(idx).add(state);
+        if (arr[idx] == null) {
+            arr[idx] = new Set();
+        }
+
+        arr[idx].add(state);
+    }
+
+    function removeFromSpatial(state, arr, idx) {
+        arr = idx >= 0? arr[0] : arr[1];
+        idx = Math.abs(idx);
+        arr[idx].delete(state);
     }
 }
