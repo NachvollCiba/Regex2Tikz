@@ -59,12 +59,13 @@
                 $("#result").show();
 
                 if ( !$("#showNFA").is(":checked") && !($("showDFA").is(":checked")) ) {
-//                    $("#minDfa").collapse("show");
+                    $("#minDfa").collapse("show");
                 }
 
                 // fill the statistics div
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
+                $("#error").hide();
                 $("#statistics").show();
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
                 $("#simpleRegexDisplay").text(parser.simpleInput);
@@ -75,9 +76,9 @@
                     updateAutomatonNames(nfa, dfa, minDfa);
                 });
             } catch (e) {
-                console.log("An exception occurred");
                 console.log(e);
                 console.log(e.stack);
+                $("#error").show().find("p").html(e.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
             }
         }
 
@@ -243,13 +244,18 @@
         <input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
     </div>
 
+
+    <div id="error" hidden>
+        <h4>Error!</h4>
+        <p></p>
+    </div>
+
     <hr width="75%" class="split1">
 
     <b id="optionShowHide" class="spoilerLink"
           onclick="revealElem($('#options'), $('#optionShowHide'), '[+] Show options', '[-] Hide options');">
         [+] Show options
     </b>
-
     <div id="options" class="collapse left">
         <table><tbody>
             <tr>

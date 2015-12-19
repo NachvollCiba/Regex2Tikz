@@ -363,7 +363,7 @@ function RegexParser(regex) {
         if (this.hasInput() && (next == "(" || validSymbol(next))) {
             var nfa = this.term();
         } else {
-            throw ("Expected '(' or any alphanumeric character, got " + next);
+            error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
         }
 
         // check if there is a union term following
@@ -373,7 +373,7 @@ function RegexParser(regex) {
 
             next = this.peekInput();
             if (next != "(" && !validSymbol(next)) {
-                throw ("Expected '(' or any alphanumeric character, got " + next);
+                error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
             }
 
             var nfa2 = this.regex();
@@ -465,12 +465,12 @@ function RegexParser(regex) {
         var next = this.popInput();
         var nfa;
 
-        if (next == "(") {
+        if (next == '(') {
             nfa = this.regex();
 
             next = this.popInput();
             if (next != ")") {
-                throw ("Expected ')', got " + next);
+                error("Expected ')', got '" + next + "'", this.input, this.simpleInput);
             }
         } else if (validSymbol(next)) {
             var _in = new State(this.lastID++);
@@ -481,7 +481,7 @@ function RegexParser(regex) {
             _in.addNextState(next, out);
             nfa = [_in, out];
         } else {
-            throw ("Expected '(' or any alphanumeric character, got " + next);
+            error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
         }
 
         return nfa;
@@ -509,7 +509,20 @@ function RegexParser(regex) {
     this.hasInput = function () {
         return this.input.length > 0;
     };
+
+    function error(message, currentInput, origInput) {
+        var pos = origInput.length - currentInput.length;
+
+        var errorMsg = origInput + "\n";
+        for (i = 0; i < origInput.length; i++) {
+            errorMsg += i == pos? "^" : " ";
+        }
+        errorMsg += "\n" + message;
+
+        throw (errorMsg);
+    }
 }
+
 
 
 

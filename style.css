@@ -150,3 +150,9 @@ input:disabled+label {
     transition: none;
 }
 
+#error {
+    border: solid red 1px;
+    margin: 10px;
+    padding: 5px;
+    color: brown;
+}
