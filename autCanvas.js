@@ -3,7 +3,7 @@
  */
 
 
-const ZOOM_STEP = 1;
+const ZOOM_STEP = 2;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
 const SNAP_RAD = .25;
@@ -27,7 +27,6 @@ function CanvasController(canvas, automaton, controlElem) {
     this.loadAutomaton = function(aut) {
         this.automaton = aut;
         this.buildSpatial();
-        this.prerender();
 
         this.snap = this.control.find("#slSnap").val();
         this.showGrid = this.control.find("#cbGrid").is(":checked");
@@ -35,13 +34,14 @@ function CanvasController(canvas, automaton, controlElem) {
 
     this.drawAutomaton = function() {
         var ctx = this.canvas[0].getContext("2d");
-        ctx.clearRect(0, 0, this.canvas[0].width, this.canvas[0].height);
+        //ctx.clearRect(0, 0, this.canvas[0].width, this.canvas[0].height);
+        this.canvas[0].width = this.canvas[0].width;
 
         if (this.showGrid) {
             this.drawGrid(ctx);
         }
 
-        var fontsize = .5 * this.camera.zoom;
+        var fontsize = Math.round(.5 * this.camera.zoom);
         ctx.font = fontsize + "px Arial";
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
@@ -52,7 +52,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
     this.drawGrid = function(ctx) {
         var width = this.canvas[0].width; var height = this.canvas[0].height;
-        var stepSize = 2* SNAP_RAD * this.camera.zoom;
+        var stepSize = Math.round(2* SNAP_RAD * this.camera.zoom);
 
         var startX = this.camera.x - Math.floor(this.camera.x / (stepSize)) * stepSize;
         var startY = this.camera.y - Math.floor(this.camera.y / (stepSize)) * stepSize;
@@ -78,12 +78,12 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.beginPath();
         ctx.strokeStyle = "#bfbfbf";
 
-        for (x = startX - stepSize / 2; x <= width; x+= stepSize) {
+        for (x = startX - Math.round(stepSize / 2); x <= width; x+= stepSize) {
             ctx.moveTo(x, 0);
             ctx.lineTo(x, height);
         }
 
-        for (y = startY - stepSize / 2; y <= height; y+= stepSize) {
+        for (y = startY - Math.round(stepSize / 2); y <= height; y+= stepSize) {
             ctx.moveTo(0, y);
             ctx.lineTo(width, y);
         }
@@ -92,12 +92,11 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.drawStates = function(ctx) {
-        var realRad = STATE_RAD * this.camera.zoom;
+        var realRad = Math.round(STATE_RAD * this.camera.zoom);
         var finalRad = Math.max(realRad - 3, 0);
-        var zoom = this.camera.zoom;
-        var offsetX = this.camera.x; var offsetY = this.camera.y;
         var width = this.canvas[0].width; var height = this.canvas[0].height;
         var moving = this.moving;
+        var that = this;
 
         // draw the actual STATES
         ctx.strokeStyle = "#000000";
@@ -105,8 +104,8 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.lineWidth = 1;
         ctx.beginPath();
         this.automaton.forEach(function(state) {
-            var posX = state.position[0] * zoom + offsetX;
-            var posY = -state.position[1] * zoom + offsetY;
+            var posX = that.screenX(state.position[0]);
+            var posY = that.screenY(state.position[1]);
 
             if (posX < -realRad || posX > width + realRad ||
                 posY < -realRad || posY > height + realRad) {
@@ -118,7 +117,6 @@ function CanvasController(canvas, automaton, controlElem) {
 
             ctx.moveTo(posX + realRad, posY);
             ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
-
             if (state.isFinal) {
                 ctx.moveTo(posX + finalRad, posY);
                 ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
@@ -135,12 +133,11 @@ function CanvasController(canvas, automaton, controlElem) {
             ctx.fillStyle = "#e5ecff";
             ctx.lineWidth = 1;
             ctx.beginPath();
-            var posX = moving.position[0] * zoom + offsetX;
-            var posY = -moving.position[1] * zoom + offsetY;
+            var posX = that.screenX(moving.position[0]);
+            var posY = that.screenY(moving.position[1]);
             ctx.moveTo(posX + realRad, posY);
             ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
             if (moving.isFinal) {
-                console.log(moving.isFinal);
                 ctx.moveTo(posX + finalRad, posY);
                 ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
             }
@@ -153,22 +150,21 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         this.automaton.forEach(function(state) {
-            var posX = state.position[0] * zoom + offsetX;
-            var posY = -state.position[1] * zoom + offsetY;
+            var posX = that.screenX(state.position[0]);
+            var posY = that.screenY(state.position[1]);
 
             if (posX < -realRad || posX > width + realRad ||
                 posY < -realRad || posY > height + realRad) {
                 return; // state is not visible
             }
-
             ctx.fillText(toInternalID(state.name), posX, posY);
         });
 
         // draw the INCOMING LINE to the START STATE
         ctx.lineWidth = 2;
         ctx.beginPath();
-        var posX = this.automaton[0].position[0] * zoom + offsetX;
-        var posY = -this.automaton[0].position[1] * zoom + offsetY;
+        var posX = that.screenX(this.automaton[0].position[0]);
+        var posY = that.screenY(this.automaton[0].position[1]);
         this.drawArrow(ctx, posX - 2 * realRad, posY, posX - realRad, posY);
         ctx.stroke();
     };
@@ -180,11 +176,9 @@ function CanvasController(canvas, automaton, controlElem) {
     }
 
     this.drawTransitions = function(ctx) {
-        var realRad = STATE_RAD * this.camera.zoom;
+        var realRad = Math.round(STATE_RAD * this.camera.zoom);
         var zoom = this.camera.zoom;
-        var offsetX = this.camera.x; var offsetY = this.camera.y;
         var width = this.canvas[0].width; var height = this.canvas[0].height;
-        var moving = this.moving;
         var that = this;
 
         // first of all: draw arrows
@@ -193,8 +187,8 @@ function CanvasController(canvas, automaton, controlElem) {
         ctx.lineWidth = 2;
 
         this.automaton.forEach(function(state) {
-            var posX = state.position[0] * zoom + offsetX;
-            var posY = -state.position[1] * zoom + offsetY;
+            var posX = that.screenX(state.position[0]);
+            var posY = that.screenY(state.position[1]);
 
             var startVisible =
                 posX >= -realRad || posX <= width + realRad ||
@@ -208,10 +202,9 @@ function CanvasController(canvas, automaton, controlElem) {
             // draw transition lines
             for (var entry of state.outgoing.entries()) {
                 var nextState = entry[0];
-                var label = entry[1].symbs.replace($("#emptySymb").val(), "ε");
 
-                var otherX = nextState.position[0] * zoom + offsetX;
-                var otherY = -nextState.position[1] * zoom + offsetY;
+                var otherX = that.screenX(nextState.position[0]);
+                var otherY = that.screenY(nextState.position[1]);
 
                 var endVisible =
                     otherX >= -realRad || otherX <= width + realRad ||
@@ -226,10 +219,10 @@ function CanvasController(canvas, automaton, controlElem) {
                 } else {
                     var dir = unitVector(vecDifference(nextState.position, state.position));
 
-                    var startX = posX + realRad * dir[0];
-                    var startY = posY - realRad * dir[1];
-                    var endX = otherX - realRad * dir[0];
-                    var endY = otherY + realRad * dir[1];
+                    var startX = Math.round(posX + realRad * dir[0]);
+                    var startY = Math.round(posY - realRad * dir[1]);
+                    var endX = Math.round(otherX - realRad * dir[0]);
+                    var endY = Math.round(otherY + realRad * dir[1]);
 
                     that.drawArrow(ctx, startX, startY, endX, endY);
                 }
@@ -240,8 +233,8 @@ function CanvasController(canvas, automaton, controlElem) {
 
         // draw transition labels
         this.automaton.forEach(function(state) {
-            var posX = state.position[0] * zoom + offsetX;
-            var posY = -state.position[1] * zoom + offsetY;
+            var posX = that.screenX(state.position[0]);
+            var posY = that.screenY(state.position[1]);
 
             var startVisible =
                 posX >= -realRad || posX <= width + realRad ||
@@ -257,8 +250,8 @@ function CanvasController(canvas, automaton, controlElem) {
                 var nextState = entry[0];
                 var label = entry[1].symbs.replace($("#emptySymb").val(), "ε");
 
-                var otherX = nextState.position[0] * zoom + offsetX;
-                var otherY = -nextState.position[1] * zoom + offsetY;
+                var otherX = that.screenX(nextState.position[0]);
+                var otherY = that.screenY(nextState.position[1]);
 
                 var endVisible =
                     otherX >= -realRad || otherX <= width + realRad ||
@@ -271,11 +264,11 @@ function CanvasController(canvas, automaton, controlElem) {
                 if (state.incoming.has(nextState)) {
                     that.drawBendedLabel(ctx, state.position, nextState.position, entry[1].placement, label);
                 } else {
-                    var midX = (posX + (otherX - posX) / 2);
-                    var midY = (posY + (otherY - posY) / 2);
+                    var midX = Math.round(posX + (otherX - posX) / 2);
+                    var midY = Math.round(posY + (otherY - posY) / 2);
 
                     // determine position
-                    const offset = LBL_OFFSET * zoom;
+                    const offset = Math.round(LBL_OFFSET * zoom);
                     switch (entry[1].placement) {
                         case "above":
                             midY -= offset;
@@ -303,15 +296,15 @@ function CanvasController(canvas, automaton, controlElem) {
             return; // no alignment to draw
         }
 
-        var posX =  this.moving.position[0] * this.camera.zoom + this.camera.x;
-        var posY = -this.moving.position[1] * this.camera.zoom + this.camera.y;
+        var posX = this.screenX(this.moving.position[0]);
+        var posY = this.screenY(this.moving.position[1]);
         var otherX, otherY;
 
         // draw lines to aligned states
         ctx.beginPath();
         if (this.xAligned != null) {
-            otherX =  this.xAligned.position[0] * this.camera.zoom + this.camera.x;
-            otherY = -this.xAligned.position[1] * this.camera.zoom + this.camera.y;
+            otherX = this.screenX(this.xAligned.position[0]);
+            otherY = this.screenY(this.xAligned.position[1]);
 
             ctx.lineWidth = 3;
             ctx.strokeStyle = "#A52A2A";
@@ -320,8 +313,8 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         if (this.yAligned != null) {
-            otherX =  this.yAligned.position[0] * this.camera.zoom + this.camera.x;
-            otherY = -this.yAligned.position[1] * this.camera.zoom + this.camera.y;
+            otherX = this.screenX(this.yAligned.position[0]);
+            otherY = this.screenY(this.yAligned.position[1]);
 
             ctx.lineWidth = 3;
             ctx.strokeStyle = "#A52A2A";
@@ -344,9 +337,11 @@ function CanvasController(canvas, automaton, controlElem) {
 
     this.drawArrowHead = function(ctx, x, y, angle) {
         var headlen = .25 * this.camera.zoom;
-        ctx.lineTo(x - headlen * Math.cos(angle - Math.PI/6), y - headlen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(Math.round(x - headlen * Math.cos(angle - Math.PI/6)),
+            Math.round(y - headlen * Math.sin(angle - Math.PI/6)));
         ctx.moveTo(x, y);
-        ctx.lineTo(x - headlen * Math.cos(angle + Math.PI/6), y - headlen * Math.sin(angle + Math.PI/6));
+        ctx.lineTo(Math.round(x - headlen * Math.cos(angle + Math.PI/6)),
+            Math.round(y - headlen * Math.sin(angle + Math.PI/6)));
     };
 
     this.drawBendedArrow = function(ctx, pos1, pos2) {
@@ -370,14 +365,14 @@ function CanvasController(canvas, automaton, controlElem) {
         var controlY = midY + ortho[1] * dis;
 
         // translate from world to screen coordinates
-        start[0] =  start[0] * this.camera.zoom + this.camera.x;
-        start[1] = -start[1] * this.camera.zoom + this.camera.y;
+        start[0] = this.screenX(start[0]);
+        start[1] = this.screenY(start[1]);
 
-        end[0] =  end[0] * this.camera.zoom + this.camera.x;
-        end[1] = -end[1] * this.camera.zoom + this.camera.y;
+        end[0] = this.screenX(end[0]);
+        end[1] = this.screenY(end[1]);
 
-        controlX =  controlX * this.camera.zoom + this.camera.x;
-        controlY = -controlY * this.camera.zoom + this.camera.y;
+        controlX = this.screenX(controlX);
+        controlY = this.screenY(controlY);
 
         ctx.moveTo(start[0], start[1]);
         ctx.quadraticCurveTo(controlX, controlY, end[0], end[1]);
@@ -405,12 +400,12 @@ function CanvasController(canvas, automaton, controlElem) {
         var controlX = midX + ortho[0] * dis;
         var controlY = midY + ortho[1] * dis;
 
-        controlX =  controlX * this.camera.zoom + this.camera.x;
-        controlY = -controlY * this.camera.zoom + this.camera.y;
+        controlX = this.screenX(controlX);
+        controlY = this.screenY(controlY);
 
         // draw label
         var lblX = controlX; var lblY = controlY;
-        var lblOffset = LBL_OFFSET * this.camera.zoom + 10;
+        var lblOffset = Math.round(LBL_OFFSET * this.camera.zoom + 10);
         switch (lblDirection) {
             case "above":
                 lblY -= lblOffset;
@@ -463,11 +458,15 @@ function CanvasController(canvas, automaton, controlElem) {
                 break;
         }
 
-        var end = [x + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle),
-            y + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+        var end = [Math.round(x + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle)),
+            Math.round(y + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle))];
 
-        var start = [x + dir[0] * Math.cos(-angle) - dir[1] * Math.sin(-angle),
-            y + dir[0] * Math.sin(-angle) + dir[1] * Math.cos(-angle)];
+        var start = [Math.round(x + dir[0] * Math.cos(-angle) - dir[1] * Math.sin(-angle)),
+            Math.round(y + dir[0] * Math.sin(-angle) + dir[1] * Math.cos(-angle))];
+
+        mid = [Math.round(mid[0]), Math.round(mid[1])];
+        control1 = [Math.round(control1[0]), Math.round(control1[1])];
+        control2 = [Math.round(control2[0]), Math.round(control2[1])];
 
         ctx.moveTo(start[0], start[1]);
         ctx.quadraticCurveTo(control1[0], control1[1], mid[0], mid[1]);
@@ -477,7 +476,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.drawLoopLabel = function(ctx, x, y, direction, label, realRad) {
-        var lblOffset = LBL_OFFSET * this.camera.zoom;
+        var lblOffset = Math.round(LBL_OFFSET * this.camera.zoom);
         var loopDis = realRad;
         var lblPos, mid, dir;
 
@@ -505,7 +504,7 @@ function CanvasController(canvas, automaton, controlElem) {
         }
 
         setTextAlign(ctx, direction);
-        ctx.fillText(label, lblPos[0], lblPos[1]);
+        ctx.fillText(label, Math.round(lblPos[0]), Math.round(lblPos[1]));
     };
 
     function setTextAlign(ctx, direction) {
@@ -540,8 +539,8 @@ function CanvasController(canvas, automaton, controlElem) {
     // center both automaton and camera around 0,0
     this.center = function() {
         // center camera
-        this.camera.x = this.canvas[0].width / 2;
-        this.camera.y = this.canvas[0].height / 2;
+        this.camera.x = Math.round(this.canvas[0].width / 2);
+        this.camera.y = Math.round(this.canvas[0].height / 2);
 
         // center states
         var offsetX = 0; var offsetY = 0;
@@ -562,19 +561,6 @@ function CanvasController(canvas, automaton, controlElem) {
         this.drawAutomaton();
         cntrl.changelistener(selected);
     };
-
-    this.spatialIndex = function(state) {
-        var s = SNAP_RAD;
-
-        var x1 = 2 * Math.floor(state.position[0] / (2*s));
-        var x2 = 2 * Math.floor((state.position[0] + s) / (2*s)) - 1;
-
-        var y1 = 2 * Math.floor(state.position[1] / (2*s));
-        var y2 = 2 * Math.floor((state.position[1] + s) / (2*s)) - 1;
-
-        return {x: [x1, x2], y: [y1, y2]};
-    };
-
 
     function updateTransitionDirs(state) {
         state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
@@ -630,33 +616,12 @@ function CanvasController(canvas, automaton, controlElem) {
         this.spatial = spatialStruc;
     };
 
-    this.prerender = function() {
-        var radius = ZOOM_MAX;
-        var posX = radius; var posY = radius;
+    this.screenX = function(worldX) {
+        return Math.round(worldX * this.camera.zoom + this.camera.x);
+    };
 
-        this.automaton.forEach(function(state) {
-            state.prerendered = $("<canvas></canvas>").attr("width", radius*2).attr("height", radius*2)[0];
-            var ctx = state.prerendered.getContext("2d");
-            ctx.strokeStyle = "#000000";
-            ctx.fillStyle = "#f2f2f2";
-            ctx.lineWidth = 1;
-
-            ctx.beginPath();
-            ctx.arc(posX, posY, radius, 0, 2 * Math.PI);
-
-            if (state.isFinal) {
-                ctx.arc(posX, posY, Math.max(radius - 3,0), 0, 2 * Math.PI);
-            }
-
-            ctx.fill();
-            ctx.stroke();
-
-            var fontsize = ZOOM_MAX;
-            ctx.font = fontsize + "px Arial";
-            ctx.fillStyle = "#000000";
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(toInternalID(state.name), posX, posY);
-        });
+    this.screenY = function(worldY) {
+        return Math.round(-worldY * this.camera.zoom + this.camera.y);
     };
 
     // listener

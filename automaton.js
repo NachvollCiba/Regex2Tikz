@@ -512,12 +512,12 @@ function RegexParser(regex) {
 
     function error(message, currentInput, origInput) {
         var pos = origInput.length - currentInput.length;
+        var errorMsg = message;
 
-        var errorMsg = origInput + "\n";
+        errorMsg += "\n" + origInput + "\n";
         for (i = 0; i < origInput.length; i++) {
             errorMsg += i == pos? "^" : " ";
         }
-        errorMsg += "\n" + message;
 
         throw (errorMsg);
     }
