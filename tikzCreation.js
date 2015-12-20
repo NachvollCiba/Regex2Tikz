@@ -2,7 +2,9 @@
  * Created by dennis on 25/10/15.
  */
 
-const DIRECTIONS = ["left", "below", "right", "above"]; // TODO: bitvector
+
+const DIRECTIONS = {LEFT: 1, BELOW: 2, RIGHT: 4, ABOVE: 8, ALL: 15};
+const DIRECTIONS_STRINGS = [null, "left", "below", null, "right", null, null, null, "above"]; // array for reverse lookup
 
 function convertToTikz(nfa) {
     initializeStateMeta(nfa);
@@ -16,7 +18,7 @@ function initializeStateMeta(nfa) {
         state.position = [Math.random(), Math.random()];
         state.incoming = new Set();
         state.outgoing = new Map();
-        state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
+        state.freeDirs = state.isStart? DIRECTIONS.ALL - DIRECTIONS.LEFT : DIRECTIONS.ALL;
         state.loop = null;
     });
 }
@@ -37,7 +39,7 @@ function computeStateMeta(nfa) {
                     // add the edge to the incoming and outgoing sets
                     var outgoing = state.outgoing.get(nextState);
                     if (!state.outgoing.has(nextState)) {
-                        outgoing = {symbs: symb, placement: DIRECTIONS[(dir+1) % DIRECTIONS.length]};
+                        outgoing = {symbs: symb, placement: (dir*2) % DIRECTIONS.ALL}; // next direction (anti-clockwise)
                         state.outgoing.set(nextState, outgoing);
                     } else {
                         outgoing.symbs += ", " + symb;
@@ -45,8 +47,8 @@ function computeStateMeta(nfa) {
                     nextState.incoming.add(state);
 
                     // mark the direction as occupied
-                    removeElem(state.freeDirs, DIRECTIONS[dir]);
-                    removeElem(nextState.freeDirs, DIRECTIONS[(dir + 2) % DIRECTIONS.length]);
+                    state.freeDirs &= ~dir;
+                    nextState.freeDirs &= ~((dir * 4) % DIRECTIONS.ALL);
                 }
             }
         }
@@ -55,7 +57,7 @@ function computeStateMeta(nfa) {
         if (loopSymbols.size > 0) {
             state.loop = {
                 symbs: generateAlphabetString(loopSymbols),
-                placement: state.freeDirs.length > 0 ? state.freeDirs.pop() : "left"
+                placement: freeDirection(state.freeDirs)
             };
         }
     });
@@ -106,7 +108,8 @@ function generateTransitionsCode(state) {
 
     // create code for loop
     if (state.loop != null) {
-        result += "\tedge [loop " + state.loop.placement + "] node [" + state.loop.placement
+        result += "\tedge [loop " + DIRECTIONS_STRINGS[state.loop.placement] + "] node ["
+            + DIRECTIONS_STRINGS[state.loop.placement]
             + "] {\$" + state.loop.symbs +  "\$} ()\n";
     }
 
@@ -115,9 +118,9 @@ function generateTransitionsCode(state) {
         var toName = toInternalID(entry[0].name);
 
         if (state.incoming.has(entry[0])) {
-            result += "\tedge [bend right = 30] node [" + entry[1].placement + "] {\$";
+            result += "\tedge [bend right = 30] node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
         } else {
-            result += "\tedge node [" + entry[1].placement + "] {\$";
+            result += "\tedge node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
         }
 
         result +=  entry[1].symbs + "\$} (" + toName + ")\n";
@@ -235,4 +238,17 @@ function removeElem(array, elem) {
     if (i >= 0) {
         array.splice(i, 1);
     }
+}
+
+function freeDirection(bitVector) {
+    if ((bitVector & DIRECTIONS.ABOVE) > 0) {
+        return DIRECTIONS.ABOVE;
+    } else if ((bitVector & DIRECTIONS.RIGHT) > 0) {
+        return DIRECTIONS.RIGHT;
+    } else if ((bitVector & DIRECTIONS.LEFT) > 0) {
+        return DIRECTIONS.BELOW;
+    } else {
+        return DIRECTIONS.LEFT; // default case
+    }
+
 }

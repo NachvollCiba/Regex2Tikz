@@ -78,19 +78,19 @@ function discreetDirection(fromVec, toVec) {
 
     if (pos[0] > 0) { // right side
         if (edgeAngle < Math.PI / 4) {
-            fromDir = 3; // above
+            fromDir = DIRECTIONS.ABOVE
         } else if (edgeAngle > 3 * Math.PI / 4) {
-            fromDir = 1; // below
+            fromDir = DIRECTIONS.BELOW;
         } else {
-            fromDir = 2; // right
+            fromDir = DIRECTIONS.RIGHT
         }
     } else { // left side
         if (edgeAngle < Math.PI / 4) {
-            fromDir = 3; // above
+            fromDir = DIRECTIONS.ABOVE;
         } else if (edgeAngle > 3 * Math.PI / 4) {
-            fromDir = 1; // below
+            fromDir = DIRECTIONS.BELOW;
         } else {
-            fromDir = 0; // left
+            fromDir = DIRECTIONS.LEFT;
         }
     }
 

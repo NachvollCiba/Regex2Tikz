@@ -170,9 +170,8 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     function labelDir(fromState, toState) {
-        // on which side do we draw a transition label?
-        var dir = (discreetDirection(fromState.position, toState.position) + 1) % DIRECTIONS.length;
-        return DIRECTIONS[dir];
+        var dir = (discreetDirection(fromState.position, toState.position) * 2) % DIRECTIONS;
+        return dir;
     }
 
     this.drawTransitions = function(ctx) {
@@ -270,20 +269,19 @@ function CanvasController(canvas, automaton, controlElem) {
                     // determine position
                     const offset = Math.round(LBL_OFFSET * zoom);
                     switch (entry[1].placement) {
-                        case "above":
+                        case DIRECTIONS.ABOVE:
                             midY -= offset;
                             break;
-                        case "below":
+                        case DIRECTIONS.BELOW:
                             midY += offset;
                             break;
-                        case "left":
+                        case DIRECTIONS.LEFT:
                             midX -= offset;
                             break;
-                        case "right":
+                        case DIRECTIONS.RIGHT:
                             midX += offset;
                             break;
                     }
-
                     setTextAlign(ctx, entry[1].placement);
                     ctx.fillText(label, midX, midY);
                 }
@@ -389,16 +387,16 @@ function CanvasController(canvas, automaton, controlElem) {
         // draw label
         var lblOffset = Math.round(LBL_OFFSET * this.camera.zoom + 10);
         switch (lblDirection) {
-            case "above":
+            case DIRECTIONS.ABOVE:
                 labelPos[1] -= lblOffset;
                 break;
-            case "below":
+            case DIRECTIONS.BELOW:
                 labelPos[1] += lblOffset;
                 break;
-            case "left":
+            case DIRECTIONS.LEFT:
                 labelPos[0] -= lblOffset;
                 break;
-            case "right":
+            case DIRECTIONS.RIGHT:
                 labelPos[0] += lblOffset;
                 break;
         }
@@ -414,25 +412,25 @@ function CanvasController(canvas, automaton, controlElem) {
 
         var dir, mid, control1, control2;
         switch(direction) {
-            case "above":
+            case DIRECTIONS.ABOVE:
                 dir = [0,-realRad];
                 mid = [x, y - realRad - loopDis];
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
                 break;
-            case "below":
+            case DIRECTIONS.BELOW:
                 dir = [0,realRad];
                 mid = [x, y + realRad + loopDis];
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
                 break;
-            case "left":
+            case DIRECTIONS.LEFT:
                 dir = [-realRad,0];
                 mid = [x - realRad - loopDis, y];
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
                 break;
-            case "right":
+            case DIRECTIONS.RIGHT:
                 dir = [realRad,0];
                 mid = [x + realRad + loopDis, y];
                 control1 = [mid[0], y - loopExc];
@@ -463,22 +461,22 @@ function CanvasController(canvas, automaton, controlElem) {
         var lblPos, mid, dir;
 
         switch (direction) {
-            case "above":
+            case DIRECTIONS.ABOVE:
                 dir = [0,-realRad];
                 mid = y - realRad - loopDis;
                 lblPos = [x, mid - lblOffset];
                 break;
-            case "below":
+            case DIRECTIONS.BELOW:
                 dir = [0,realRad];
                 mid = y + realRad + loopDis;
                 lblPos = [x, mid + lblOffset];
                 break;
-            case "left":
+            case DIRECTIONS.LEFT:
                 dir = [-realRad,0];
                 mid = x - realRad - loopDis;
                 lblPos = [mid - lblOffset, y];
                 break;
-            case "right":
+            case DIRECTIONS.RIGHT:
                 dir = [realRad,0];
                 mid = x + realRad + loopDis;
                 lblPos = [mid + lblOffset, y];
@@ -491,16 +489,16 @@ function CanvasController(canvas, automaton, controlElem) {
 
     function setTextAlign(ctx, direction) {
         switch(direction) {
-            case "above":
+            case DIRECTIONS.ABOVE:
                 ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
                 break;
-            case "below":
+            case DIRECTIONS.BELOW:
                 ctx.textAlign = "center"; ctx.textBaseline = "hanging";
                 break;
-            case "left":
+            case DIRECTIONS.LEFT:
                 ctx.textAlign = "right"; ctx.textBaseline = "middle";
                 break;
-            case "right":
+            case DIRECTIONS.RIGHT:
                 ctx.textAlign = "left"; ctx.textBaseline = "middle";
                 break;
         }
@@ -544,21 +542,21 @@ function CanvasController(canvas, automaton, controlElem) {
         cntrl.changelistener(selected);
     };
 
-    function updateTransitionDirs(state) {
-        state.freeDirs = state.isStart? ["below", "right", "above"] : ["left", "below", "right", "above"];
+    function updateTransitionDirs(state) { // TODO only update when one state has a loop
+        state.freeDirs = state.isStart? DIRECTIONS.ALL - DIRECTIONS.LEFT : DIRECTIONS.ALL;
         var dir;
 
         for (var entry of state.outgoing.entries()) {
-            dir = DIRECTIONS[discreetDirection(state.position, entry[0].position)];
-            removeElem(state.freeDirs, dir);
+            dir = discreetDirection(state.position, entry[0].position);
+            state.freeDirs &= ~dir;
         }
         for (var nextState of state.incoming) {
-            dir = DIRECTIONS[discreetDirection(state.position, nextState.position)];
-            removeElem(state.freeDirs, dir);
+            dir = discreetDirection(state.position, nextState.position);
+            state.freeDirs &= ~dir;
         }
 
         if (state.loop != null) {
-            state.loop.placement = state.freeDirs.length > 0? state.freeDirs.pop() : "left";
+            state.loop.placement = freeDirection(state.freeDirs);
         }
 
     }
