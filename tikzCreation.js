@@ -2,7 +2,7 @@
  * Created by dennis on 25/10/15.
  */
 
-const DIRECTIONS = ["left", "below", "right", "above"];
+const DIRECTIONS = ["left", "below", "right", "above"]; // TODO: bitvector
 
 function convertToTikz(nfa) {
     initializeStateMeta(nfa);
@@ -34,7 +34,6 @@ function computeStateMeta(nfa) {
                     loopSymbols.add(symb);
                 } else {
                     var dir = discreetDirection(state.position, nextState.position);
-
                     // add the edge to the incoming and outgoing sets
                     var outgoing = state.outgoing.get(nextState);
                     if (!state.outgoing.has(nextState)) {
@@ -62,32 +61,6 @@ function computeStateMeta(nfa) {
     });
 }
 
-function discreetDirection(fromVec, toVec) {
-    // figure out in what direction the edge goes
-    var pos = vecDifference(toVec, fromVec);
-    var edgeAngle = angle([0, 1], pos);
-    var fromDir;
-
-    if (pos[0] > 0) { // right side
-        if (edgeAngle < Math.PI / 4) {
-            fromDir = 3; // above
-        } else if (edgeAngle > 3 * Math.PI / 4) {
-            fromDir = 1; // below
-        } else {
-            fromDir = 2; // right
-        }
-    } else { // left side
-        if (edgeAngle < Math.PI / 4) {
-            fromDir = 3; // above
-        } else if (edgeAngle > 3 * Math.PI / 4) {
-            fromDir = 1; // below
-        } else {
-            fromDir = 0; // left
-        }
-    }
-
-    return fromDir;
-}
 
 function generateCode(nfa) {
     var tikz  = "\\usetikzlibrary{automata, positioning}\n";
@@ -169,18 +142,13 @@ function generateAlphabetString(alphSet, eps) {
 
 function alignAutomaton(automaton, gridWidth) {
     automaton.forEach(function(state) {
-        state.position[0] = Math.round(state.position[0] / gridWidth) * gridWidth;
-        state.position[1] = Math.round(state.position[1] / gridWidth) * gridWidth;
+        state.position = scalarMult(round(scalarDiv(state.position, gridWidth)), gridWidth);
     });
 }
 
-// TODO put all things in one regex (efficiency)
 function toInternalID(name) {
     return name.toString()
-        .replace(/\s/g, "") // remove whitespace,
-        .replace(",","").replace(".","") // punctuation
-        .replace("{","").replace("}","") // brackets
-        .replace("_",""); // and underscores
+        .replace(/(\s|,|\.|\{|\}|_)/g, ""); // remove whitespace, punctuation, brackets and underscores
 }
 
 
@@ -201,7 +169,7 @@ function layoutAut(states) {
     }
 
 
-    for (var i = 0; i < ITER_THRESHOLD; i++) {
+    for (var i = 0; i < ITER_THRESHOLD; i++) { // TODO optimization and improvments
         var totalDelta = 0;
         var deltaE = 0;
         var deltaD = 0;
@@ -212,89 +180,55 @@ function layoutAut(states) {
             movDeltas[x] = [0, 0];
         }
 
+        var unit, val;
+
         // apply "gravitational" force towards center (0,0)
         for (var x = 0; x < states.length; x++) {
-            var len = vecLen(states[x].position);
-            var unit = unitVector(states[x].position);
-            var val = -GRAV_CONST * Math.pow(len, 1); // F = -c*r
+            var length = len(states[x].position);
+            unit = normalize(states[x].position);
+            val = -GRAV_CONST * Math.pow(length, 1); // F = -c*r
 
-            movDeltas[x][0] += val * unit[0];
-            movDeltas[x][1] += val * unit[1];
+            addInPlace(movDeltas[x], scalarMult(unit, val));
         }
 
         for (var x = 0; x < states.length; x++) {
-            var movDelta = [0, 0];
-
             for (var y = x + 1; y < states.length; y++) {
+                var movDelta = [0, 0];
+
                 // compute repulsive force for every other state
                 var dist = euclideanDistance(states[x].position, states[y].position);
-                var val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
-                var unit = unitVector(vecDifference(states[x].position, states[y].position));
+                val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
+                unit = normalize(sub(states[x].position, states[y].position));
 
-                movDelta[0] += val * unit[0];
-                movDelta[1] += val * unit[1];
+                addInPlace(movDelta, scalarMult(unit, val));
                 deltaE += val;
 
                 // compute attracting force for every connected state
                 if (states[x].conStates.has(states[y])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
-
-                    movDelta[0] += val * unit[0];
-                    movDelta[1] += val * unit[1];
+                    addInPlace(movDelta, scalarMult(unit, val));
                     deltaD = val;
                 }
 
 
                 // store the move deltas for the states
-                movDeltas[x][0] += movDelta[0];
-                movDeltas[x][1] += movDelta[1];
+                addInPlace(movDeltas[x], movDelta);
+                subInPlace(movDeltas[y], movDelta);
 
-                movDeltas[y][0] -= movDelta[0];
-                movDeltas[y][1] -= movDelta[1];
-
-                totalDelta += euclideanDistance([0, 0], movDelta);
-                movDelta = [0, 0];
+                totalDelta += euclideanDistance(ORIGIN, movDelta);
             }
         }
 
         // apply translations
         for (x = 0; x < states.length; x++) {
-            states[x].position[0] += movDeltas[x][0];
-            states[x].position[1] += movDeltas[x][1];
+            addInPlace(states[x].position, movDeltas[x]);
+
         }
 
         // align automaton to grid
         alignAutomaton(states, SNAP_RAD);
     }
 }
-
-function unitVector(vec) {
-    var distance = vecLen(vec);
-    return [vec[0] / distance, vec[1] / distance];
-
-}
-
-function euclideanDistance(vec1, vec2) {
-    return Math.sqrt(Math.pow(vec1[0] - vec2[0], 2) +
-        Math.pow(vec1[1] - vec2[1], 2));
-}
-
-function vecLen(vec) {
-    return euclideanDistance([0, 0], vec);
-}
-
-function vecDifference(vec1, vec2) {
-    return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
-}
-
-function dot(vec1, vec2) {
-    return vec1[0] * vec2[0] + vec1[1] * vec2[1];
-}
-
-function angle(vec1, vec2) {
-    return Math.acos(dot(vec1, vec2) / (vecLen(vec1) * vecLen(vec2)));
-}
-
 
 function removeElem(array, elem) {
     var i = array.indexOf(elem);

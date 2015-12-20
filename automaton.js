@@ -248,7 +248,7 @@ function renameStates(states) {
 }
 
 
-function listOfConnectedStates(state) {
+function listOfConnectedStates(state) { // TODO still needed?
     var allConStates = new Set();
     for (var conStates of state.transitions.values()) {
         for (var conState of conStates) {
@@ -525,8 +525,6 @@ function RegexParser(regex) {
 
 
 
-
-
 function cloneAutomaton(aut) {
     var clonedAut = [];
 
@@ -558,12 +556,12 @@ function validSymbol(symb){
 
 function rewriteExpression(expr) { // rewrite a regex as a "simple expression" using only "|", "*" and concatenation
     var simplifiedExpr = expr.slice(0);
-    var idx;
+    var idx, startIdx, len, substr;
 
     while ((idx=simplifiedExpr.indexOf("?")) > -1) { // rewrite a? => (a|$)
-        var startIdx = findSubstring();
-        var len = idx - startIdx;
-        var substr = simplifiedExpr.substr(startIdx, len);
+        startIdx = findSubstring();
+        len = idx - startIdx;
+        substr = simplifiedExpr.substr(startIdx, len);
         simplifiedExpr =
             simplifiedExpr.substr(0, startIdx) +
             "(" + substr + "|$)" +
@@ -571,9 +569,9 @@ function rewriteExpression(expr) { // rewrite a regex as a "simple expression" u
     }
 
     while ((idx=simplifiedExpr.indexOf("+")) > -1) { // rewrite a+ => aa*
-        var startIdx = findSubstring();
-        var len = idx - startIdx;
-        var substr = simplifiedExpr.substr(startIdx, len);
+        startIdx = findSubstring();
+        len = idx - startIdx;
+        substr = simplifiedExpr.substr(startIdx, len);
         simplifiedExpr =
             simplifiedExpr.substr(0, startIdx) +
             substr + substr + "*" +

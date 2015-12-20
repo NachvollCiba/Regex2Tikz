@@ -10,7 +10,7 @@ const SNAP_RAD = .25;
 const LBL_OFFSET = .15;
 
 function CanvasController(canvas, automaton, controlElem) {
-    // class member
+    // class member TODO make some private
     this.canvas = canvas;
     this.automaton = automaton;
     this.control = controlElem;
@@ -97,6 +97,7 @@ function CanvasController(canvas, automaton, controlElem) {
         var width = this.canvas[0].width; var height = this.canvas[0].height;
         var moving = this.moving;
         var that = this;
+        var posX, posY;
 
         // draw the actual STATES
         ctx.strokeStyle = "#000000";
@@ -122,7 +123,6 @@ function CanvasController(canvas, automaton, controlElem) {
                 ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
             }
 
-            //ctx.drawImage(state.prerendered, posX-realRad, posY-realRad, realRad*2, realRad*2);
         });
         ctx.fill();
         ctx.stroke();
@@ -133,8 +133,8 @@ function CanvasController(canvas, automaton, controlElem) {
             ctx.fillStyle = "#e5ecff";
             ctx.lineWidth = 1;
             ctx.beginPath();
-            var posX = that.screenX(moving.position[0]);
-            var posY = that.screenY(moving.position[1]);
+            posX = that.screenX(moving.position[0]);
+            posY = that.screenY(moving.position[1]);
             ctx.moveTo(posX + realRad, posY);
             ctx.arc(posX, posY, realRad, 0, 2 * Math.PI);
             if (moving.isFinal) {
@@ -163,8 +163,8 @@ function CanvasController(canvas, automaton, controlElem) {
         // draw the INCOMING LINE to the START STATE
         ctx.lineWidth = 2;
         ctx.beginPath();
-        var posX = that.screenX(this.automaton[0].position[0]);
-        var posY = that.screenY(this.automaton[0].position[1]);
+        posX = that.screenX(this.automaton[0].position[0]);
+        posY = that.screenY(this.automaton[0].position[1]);
         this.drawArrow(ctx, posX - 2 * realRad, posY, posX - realRad, posY);
         ctx.stroke();
     };
@@ -217,7 +217,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 if (state.incoming.has(nextState)) {
                     that.drawBendedArrow(ctx, state.position, nextState.position);
                 } else {
-                    var dir = unitVector(vecDifference(nextState.position, state.position));
+                    var dir = normalize(sub(nextState.position, state.position));
 
                     var startX = Math.round(posX + realRad * dir[0]);
                     var startY = Math.round(posY - realRad * dir[1]);
@@ -348,81 +348,63 @@ function CanvasController(canvas, automaton, controlElem) {
         const dis = 3*STATE_RAD;// distance in world coordinates
         const angle = 5.75959; // 30°
 
-        var dir =  unitVector(vecDifference(pos2, pos1));
-        dir[0] *= STATE_RAD; dir[1] *= STATE_RAD;
-        var start = [pos1[0] + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle), // rotate by angle
-            pos1[1] + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+        var dir =  scalarMult(normalize(sub(pos2, pos1)), STATE_RAD);
 
-        var end = [pos2[0] - dir[0] * Math.cos(-angle) + dir[1] * Math.sin(-angle), // rotate by angle
-            pos2[1] - dir[0] * Math.sin(-angle) - dir[1] * Math.cos(-angle)];
+        var start = add(pos1, rotate(dir,  angle));
+        var end   = sub(pos2, rotate(dir, -angle));
 
         var midX = start[0] + (end[0] - start[0]) / 2;
         var midY = start[1] + (end[1] - start[1]) / 2;
 
-        var ortho = [dir[1], -dir[0]];
-
-        var controlX = midX + ortho[0] * dis;
-        var controlY = midY + ortho[1] * dis;
+        scalarMultInPlace(dir, dis);
+        var control = [midX + dir[1], midY - dir[0]];
 
         // translate from world to screen coordinates
-        start[0] = this.screenX(start[0]);
-        start[1] = this.screenY(start[1]);
-
-        end[0] = this.screenX(end[0]);
-        end[1] = this.screenY(end[1]);
-
-        controlX = this.screenX(controlX);
-        controlY = this.screenY(controlY);
+        this.toScreen(start);
+        this.toScreen(end);
+        this.toScreen(control);
 
         ctx.moveTo(start[0], start[1]);
-        ctx.quadraticCurveTo(controlX, controlY, end[0], end[1]);
+        ctx.quadraticCurveTo(control[0], control[1], end[0], end[1]);
 
-        this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-controlY, end[0]-controlX));
+        this.drawArrowHead(ctx, end[0], end[1], Math.atan2(end[1]-control[1], end[0]-control[0]));
     };
 
     this.drawBendedLabel = function(ctx, pos1, pos2, lblDirection, label) {
         const dis = 3*STATE_RAD;// distance in world coordinates
         const angle = 5.75959; // 30°
 
-        var dir =  unitVector(vecDifference(pos2, pos1));
-        dir[0] *= STATE_RAD; dir[1] *= STATE_RAD;
-        var start = [pos1[0] + dir[0] * Math.cos(angle) - dir[1] * Math.sin(angle), // rotate by angle
-            pos1[1] + dir[0] * Math.sin(angle) + dir[1] * Math.cos(angle)];
+        var dir =  scalarMult(normalize(sub(pos2, pos1)), STATE_RAD);
 
-        var end = [pos2[0] - dir[0] * Math.cos(-angle) + dir[1] * Math.sin(-angle), // rotate by angle
-            pos2[1] - dir[0] * Math.sin(-angle) - dir[1] * Math.cos(-angle)];
+        var start = add(pos1, rotate(dir,  angle));
+        var end   = sub(pos2, rotate(dir, -angle));
 
         var midX = start[0] + (end[0] - start[0]) / 2;
         var midY = start[1] + (end[1] - start[1]) / 2;
 
-        var ortho = [dir[1], -dir[0]];
-
-        var controlX = midX + ortho[0] * dis;
-        var controlY = midY + ortho[1] * dis;
-
-        controlX = this.screenX(controlX);
-        controlY = this.screenY(controlY);
+        scalarMultInPlace(dir, dis);
+        var labelPos = [midX + dir[1], midY - dir[0]];
+        this.toScreen(labelPos);
 
         // draw label
-        var lblX = controlX; var lblY = controlY;
         var lblOffset = Math.round(LBL_OFFSET * this.camera.zoom + 10);
         switch (lblDirection) {
             case "above":
-                lblY -= lblOffset;
+                labelPos[1] -= lblOffset;
                 break;
             case "below":
-                lblY += lblOffset;
+                labelPos[1] += lblOffset;
                 break;
             case "left":
-                lblX -= lblOffset;
+                labelPos[0] -= lblOffset;
                 break;
             case "right":
-                lblX += lblOffset;
+                labelPos[0] += lblOffset;
                 break;
         }
 
         setTextAlign(ctx, lblDirection);
-        ctx.fillText(label, lblX, lblY);
+        ctx.fillText(label, labelPos[0], labelPos[1]);
     };
 
     this.drawLoopArrow = function(ctx, x, y, direction, realRad) {
@@ -622,6 +604,11 @@ function CanvasController(canvas, automaton, controlElem) {
 
     this.screenY = function(worldY) {
         return Math.round(-worldY * this.camera.zoom + this.camera.y);
+    };
+
+    this.toScreen = function(worldVec) {
+        worldVec[0] = this.screenX(worldVec[0]);
+        worldVec[1] = this.screenY(worldVec[1]);
     };
 
     // listener

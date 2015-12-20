@@ -2,56 +2,113 @@
  * Created by dennis on 09/11/15.
  */
 
+// utility function for 2d vectors, stored as arrays
 
-// a class for 2-dimensional vectors
-function Vector2(x, y) {
-    this.x = x; this.y = y;
+const NORTH  = [ 0,-1];
+const SOUTH  = [ 0, 1];
+const EAST   = [ 1, 0];
+const WEST   = [-1, 0];
+const ORIGIN = [ 0, 0];
 
-    this.clone = function() {
-        return new Vector2(this.x, this.y);
-    };
-
-    this.len = function() {
-        return Math.sqrt(this.x * this.x, this.y * this.y);
-    };
-
-    this.normalize = function() {
-        var l = this.len();
-        this.x /= len; this.y /= len;
-        return this;
-    };
-
-    this.euclideanDistance = function(other) {
-        return Math.sqrt(Math.pos(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
-    };
-
-    this.add = function(other) {
-        this.x += other.x; this.y += other.y;
-        return this;
-    };
-
-    this.sub = function(other) {
-        this.x -= other.x; this.y -= other.y;
-        return this;
-    };
-
-    this.dot = function(other) {
-        return this.x * other.x + this.y * other.y;
-    };
-
-    this.angle = function(other) { // in radians
-        return Math.acos(this.dot(other) / (this.len() * other.len()));
-    };
-
-    this.scalarMult = function(s) {
-        this.x *= s; this.y *= s;
-        return this;
-    }
+function normalize(vec) {
+    var distance = len(vec);
+    return [vec[0] / distance, vec[1] / distance];
 }
 
+function euclideanDistance(vec1, vec2) {
+    return Math.sqrt(Math.pow(vec1[0] - vec2[0], 2) +
+        Math.pow(vec1[1] - vec2[1], 2));
+}
+
+function len(vec) {
+    return euclideanDistance([0, 0], vec);
+}
+
+function sub(vec1, vec2) {
+    return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
+}
+
+function subInPlace(vec, toSub) {
+    vec[0] -= toSub[0]; vec[1] -= toSub[1];
+}
+
+function add(vec1, vec2) {
+    return [vec1[0] + vec2[0], vec1[1] + vec2[1]];
+}
+
+function addInPlace(vec, toAdd) {
+    vec[0] += toAdd[0]; vec[1] += toAdd[1];
+}
+
+function scalarMult(vec, s) {
+    return [vec[0] * s, vec[1] * s];
+}
+
+function scalarMultInPlace(vec, s) {
+    vec[0] *= s; vec[1] *= s;
+}
+
+function scalarDiv(vec, s) {
+    return [vec[0] / s, vec[1] / s];
+}
+
+function dot(vec1, vec2) {
+    return vec1[0] * vec2[0] + vec1[1] * vec2[1];
+}
+
+function angle(vec1, vec2) {
+    return Math.acos(dot(vec1, vec2) / (len(vec1) * len(vec2)));
+}
+
+function rotate(vec, angle) {
+    return [vec[0] * Math.cos(angle) - vec[1] * Math.sin(angle),
+            vec[0] * Math.sin(angle) + vec[1] * Math.cos(angle)];
+}
+
+function round(vec) {
+    return [Math.round(vec[0]), Math.round(vec[1])];
+}
+
+
+function discreetDirection(fromVec, toVec) {
+    // figure out in what direction the edge goes
+    var pos = sub(toVec, fromVec);
+    var edgeAngle = angle(SOUTH, pos);
+    var fromDir;
+
+    if (pos[0] > 0) { // right side
+        if (edgeAngle < Math.PI / 4) {
+            fromDir = 3; // above
+        } else if (edgeAngle > 3 * Math.PI / 4) {
+            fromDir = 1; // below
+        } else {
+            fromDir = 2; // right
+        }
+    } else { // left side
+        if (edgeAngle < Math.PI / 4) {
+            fromDir = 3; // above
+        } else if (edgeAngle > 3 * Math.PI / 4) {
+            fromDir = 1; // below
+        } else {
+            fromDir = 0; // left
+        }
+    }
+
+    return fromDir;
+}
+
+
+
+/**
+ * A datastructure that puts states in an overlapping grid.
+ * @param gridWidth
+ * @constructor
+ */
 function SpatialStruct(gridWidth) {
+    // first array is for right / below, second array for left / above
     this.rows = [[], []];
     this.cols = [[], []];
+
     this.gridWidth = gridWidth;
 
     this.put = function(state) {
@@ -83,8 +140,8 @@ function SpatialStruct(gridWidth) {
         }
         if (newIdx.y[1] != state.spatial.y[1]) {
             removeFromSpatial(state, this.cols, state.spatial.y[1]);
-        }
             addToSpatial(state, this.cols, newIdx.y[1]);
+        }
 
         state.spatial = newIdx;
     };
@@ -168,7 +225,8 @@ function SpatialStruct(gridWidth) {
     };
 
 
-
+    // compute the index for the spatial strucutre of a given position.
+    // will return 2 x and y values for the overlapping grid structure
     function spatialIdx(pos, s) {
         var x1 = 2 * Math.floor(pos[0] / (2*s));
         var x2 = 2 * Math.floor((pos[0] + s) / (2*s)) - 1;
