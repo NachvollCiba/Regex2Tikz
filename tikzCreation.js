@@ -61,6 +61,11 @@ function computeLabelPlacement(nfa) {
 
     nfa.forEach(function(state) {
         var stateHasLoop = state.loop != null;
+
+        if (stateHasLoop) {
+            looping.add(state);
+        }
+
         for (var entry of state.outgoing.entries()) {
             var nextState = entry[0];
             var dir = discreetDirection(state.position, nextState.position);
@@ -69,7 +74,6 @@ function computeLabelPlacement(nfa) {
             // mark the direction as occupied
             if (stateHasLoop) {
                 state.freeDirs &= ~dir;
-                looping.add(state);
             }
 
             if (nextState.loop != null) {
@@ -183,13 +187,17 @@ function layoutAut(states) {
     const EDGE_CONST = .15;
     const GRAV_CONST = .1;
 
+    const DELTA_THRESHOLD = .2;
+
     // put the start state to the left
     states[0].position[0] = -2 * states.length;
+    var oldDelta = Infinity;
+    var totalDelta = 0;
+    var iter = 0;
 
-    for (var i = 0; i < ITER_THRESHOLD; i++) { // TODO optimization and improvments
-        var totalDelta = 0;
-        var deltaE = 0;
-        var deltaD = 0;
+    while (Math.abs(oldDelta - totalDelta) > DELTA_THRESHOLD && iter++ < ITER_THRESHOLD) {
+        oldDelta = totalDelta;
+        totalDelta = 0;
 
         // initialize movDeltas
         var movDeltas = [];
@@ -202,7 +210,7 @@ function layoutAut(states) {
         // apply "gravitational" force towards center (0,0)
         for (var x = 0; x < states.length; x++) {
             var length = len(states[x].position);
-            unit = normalize(states[x].position);
+            unit = length > 0? normalize(states[x].position) : [0,0];
             val = -GRAV_CONST * Math.pow(length, 1); // F = -c*r
 
             addInPlace(movDeltas[x], scalarMult(unit, val));
@@ -212,19 +220,21 @@ function layoutAut(states) {
             for (var y = x + 1; y < states.length; y++) {
                 var movDelta = [0, 0];
 
+                if (equal(states[x].position, states[y].position)) {
+                    // add random vector to avoid divide-by-zero
+                    addInPlace(states[x].position, [Math.random(), Math.random()]);
+                }
+
                 // compute repulsive force for every other state
                 var dist = euclideanDistance(states[x].position, states[y].position);
                 val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
                 unit = normalize(sub(states[x].position, states[y].position));
-
                 addInPlace(movDelta, scalarMult(unit, val));
-                deltaE += val;
 
                 // compute attracting force for every connected state
                 if (states[x].incoming.has(states[y]) || states[y].incoming.has(states[x])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
                     addInPlace(movDelta, scalarMult(unit, val));
-                    deltaD = val;
                 }
 
 
@@ -244,6 +254,8 @@ function layoutAut(states) {
 
         // align automaton to grid
         alignAutomaton(states, SNAP_RAD);
+
+        console.log(iter + ": " + totalDelta);
     }
 }
 

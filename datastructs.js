@@ -12,6 +12,9 @@ const ORIGIN = [ 0, 0];
 
 function normalize(vec) {
     var distance = len(vec);
+    if (distance == 0) {
+        throw Error("Cannot normalize vector (0,0)");
+    }
     return [vec[0] / distance, vec[1] / distance];
 }
 
@@ -78,9 +81,12 @@ function roundInPlace(vec) {
 }
 
 function clone(vec) {
-    return [vec[0], vec[1]]; // TODO performance benchmark
+    return [vec[0], vec[1]];
 }
 
+function equal(vec1, vec2) {
+    return vec1[0] == vec2[0] && vec1[1] == vec2[1];
+}
 
 function discreetDirection(fromVec, toVec) {
     // figure out in what direction the edge goes
