@@ -254,8 +254,6 @@ function layoutAut(states) {
 
         // align automaton to grid
         alignAutomaton(states, SNAP_RAD);
-
-        console.log(iter + ": " + totalDelta);
     }
 }
 
@@ -271,7 +269,7 @@ function freeDirection(bitVector) {
         return DIRECTIONS.ABOVE;
     } else if ((bitVector & DIRECTIONS.RIGHT) > 0) {
         return DIRECTIONS.RIGHT;
-    } else if ((bitVector & DIRECTIONS.LEFT) > 0) {
+    } else if ((bitVector & DIRECTIONS.BELOW) > 0) {
         return DIRECTIONS.BELOW;
     } else {
         return DIRECTIONS.LEFT; // default case

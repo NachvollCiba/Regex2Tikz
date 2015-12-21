@@ -28,6 +28,9 @@ input:disabled+label {
     border: solid 1px cadetblue;
 }
 
+.result {
+}
+
 .left {
     text-align: left;
 }
@@ -150,13 +153,14 @@ input:disabled+label {
     transition: none;
 }
 
-#error {
-    border: solid red 1px;
+.error {
+    border: solid brown 1px;
     margin: 10px;
     padding: 5px;
-    color: brown;
+    color: black;
+    background-color: #ffd7cf
 }
 
-#error p {
+.error p {
     font-family: monospace;
 }

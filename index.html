@@ -78,7 +78,7 @@
             } catch (e) {
                 console.log(e);
                 console.log(e.stack);
-                $("#error").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
+                $("#parserError").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
             }
         }
 
@@ -150,7 +150,7 @@
                 var tikzDispl = elem.find("textarea");
                 var renderImg = elem.find("img");
                 renderBtn.click(function() {
-                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
                 });
 
                 elem.find("#btnClipboard").click(function() {
@@ -178,7 +178,7 @@
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
-            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
 
             // update the canvas
             var cntrl = data.canvasCntrl;
@@ -190,9 +190,10 @@
             cntrl.drawAutomaton();
         }
 
-        function fetchLatexRenderedPng(tikz, img, button) {
+        function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
             button.prop("disabled", true);
-            img.attr("src", "img/loading.gif").attr("width", "128");
+            img.attr("src", "img/loading.gif").attr("width", "128").show();
+            errorDiv.hide();
 
             $.ajax({
                 url: encodeURI("render.php"),
@@ -206,12 +207,20 @@
 
                     // adjust DOM elements
                     button.prop("disabled", false);
-                    img.attr("src", response["url"]).attr("width", width);
+
+                    if (response["status"] == "success") {
+                        img.attr("src", response["url"]).attr("width", width);
+                    } else {
+                        img.attr("src", "").hide();
+                        errorDiv.show().find("p")
+                                .html(response["message"]);
+                    }
                 },
                 error: function (xhr, textStatus) {
-                    img.attr("src", ""); // TODO some sort of error img or something
+                    img.attr("src", "").hide();
                     button.prop("disabled", false);
-                    alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                    errorDiv.show().find("p")
+                            .html("Error connecting to <a href=http://regex2tikz.uncompilable.com>uncompilable.com</a>");
                 }
             });
         }
@@ -233,7 +242,7 @@
     </div>
 
 
-    <div id="error" hidden>
+    <div class="error" id="parserError" hidden>
         <h4>Error!</h4>
         <p></p>
     </div>
@@ -310,19 +319,19 @@
     </table>
 </div>
 <div hidden id="result">
-    <div class="group" id="nfaDiv">
+    <div class="group result" id="nfaDiv">
         <h2 id="nfaHeader" class="spoilerLink"
             onclick="revealElem($('#nfa'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
             Resulting NFA &#x25BC;</h2>
         <div id="nfa" class="collapse"></div></div>
 
-    <div class="group" id="dfaDiv">
+    <div class="group result" id="dfaDiv">
         <h2 id="dfaHeader" class="spoilerLink"
             onclick="revealElem($('#dfa'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
             Non-minimal powerset DFA &#x25BC;</h2>
         <div id="dfa" class="collapse"></div></div>
 
-    <div class="group" id="minDfaDiv">
+    <div class="group result" id="minDfaDiv">
         <h2 id="minDfaHeader" class="spoilerLink"
             onclick="revealElem($('#minDfa'), $('#minDfaHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
             Minimized DFA &#x25BC;</h2>
@@ -347,6 +356,7 @@
                     <button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
                 </div>
                 <div class="tab-pane" id="latex_minDfa">
+                    <div hidden class="error"><h4>No preview available.</h4><p></p></div>
                     <img src="" class="autDisplay"/> <br>
                     <button type="button" class="btn btn-primary" id="btnRender">Render again...</button><br>
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>

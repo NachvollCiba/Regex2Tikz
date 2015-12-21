@@ -349,7 +349,7 @@ function RegexParser(regex) {
         var nfa = this.expr();
 
         if (this.hasInput()) {
-            error(["EOL", "any valid character"], this.peekInput(), input, this.simpleInput);
+            error(["EOL"], this.peekInput(), input, this.simpleInput);
         }
 
         return nfa;

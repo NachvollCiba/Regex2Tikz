@@ -128,9 +128,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
         // draw the HIGHLIGHTED STATE
         if (moving !== null) {
-            ctx.strokeStyle = "#000000";
-            ctx.fillStyle = "#e5ecff";
-            ctx.lineWidth = 1;
+            ctx.fillStyle = "#d14848";
             ctx.beginPath();
             posX = that.screenX(moving.position[0]);
             posY = that.screenY(moving.position[1]);
@@ -140,8 +138,8 @@ function CanvasController(canvas, automaton, controlElem) {
                 ctx.moveTo(posX + finalRad, posY);
                 ctx.arc(posX, posY, finalRad, 0, 2 * Math.PI);
             }
-            ctx.stroke();
             ctx.fill();
+            ctx.stroke();
         }
 
         // draw the STATE NAMES
@@ -213,7 +211,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
                 if (state.incoming.has(nextState)) {
                     that.drawBendedArrow(ctx, state.position, nextState.position);
-                } else {
+                } else if (!equal(state.position, nextState.position)) { // nothing to draw if both states are at the same spot
                     var dir = normalize(sub(nextState.position, state.position));
 
                     var startX = Math.round(posX + realRad * dir[0]);
@@ -649,12 +647,14 @@ function CanvasController(canvas, automaton, controlElem) {
 
             // test if clicked on one of the states
             if (euclideanDistance(state.position, [mouseX, mouseY]) < STATE_RAD) {
-                selected = state;
+                selected = state; moving = state;
                 selected.canvasPos = [selected.position[0], selected.position[1]];
                 findAligned(state);
                 break;
             }
         }
+
+        that.drawAutomaton();
     };
 
     this.canvasMouseMove = function(event) {
@@ -666,8 +666,6 @@ function CanvasController(canvas, automaton, controlElem) {
             var deltaY = event.offsetY - lastMouse.y;
 
             if (selected instanceof State) {
-                moving = selected;
-
                 // translate the selected state
                 var movX = deltaX / camera.zoom;
                 var movY = deltaY / camera.zoom;

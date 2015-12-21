@@ -56,6 +56,12 @@ function get_quicklatex_img_url($tikz) {
         $server_resp = curl_exec($ch);
         curl_close($ch);
 
+        if (!$server_resp) {
+            return json_encode(array(
+                                   "status" => "error",
+                                   "message" => "Could not connect to <a href=http://www.quicklatex.com>quicklatex.com</a>"));
+
+        }
 
         // parse the response
         if (preg_match("/^([-]?\d+)\r\n(\S+)\s([-]?\d+)\s(\d+)\s(\d+)\r?\n?([\s\S]*)/",
@@ -70,41 +76,20 @@ function get_quicklatex_img_url($tikz) {
 
 
             if ($status == 0) { // no errors
-                return json_encode(array("url" => $image_url, "width" => $image_width, "height" => $image_height));
+                return json_encode(array("status" => "success",
+                                       "url" => $image_url,
+                                       "width" => $image_width,
+                                       "height" => $image_height));
             } else {
-                return json_encode(array("url" => "img/error.png", "width" => 128, "height" => 128));
+                return json_encode(array(
+                                       "status" => "error",
+                                       "message" => "LaTeX-code could not be compiled (automaton too large?)"));
             }
-
-        } else {
-            return json_encode(array("url" => "img/error.png", "width" => 128, "height" => 128));
         }
     }
+
 }
 
 // return the url of the rendered latex image
 echo get_quicklatex_img_url($_POST["tikz"]);
 
-
-// test function
-function test() {
-    $tikz = "\\usetikzlibrary{automata, positioning}
-\\begin{tikzpicture}
-\\node[state,initial] (0) at (0,0) {0};
-\\node[state] (1) at (2,0) {1};
-\\node[state] (2) at (4,0) {2};
-\\node[state] (3) at (6,0) {3};
-\\node[state] (4) at (8,0) {4};
-\\node[state,accepting] (5) at (10,0) {5};
-
-\\path[->]
-(0) edge node [above] {\$a\$} (1)
-(1) edge node [above] {\$\\varepsilon\$} (2)
-(2) edge node [above] {\$b\$} (3)
-(3) edge node [above] {\$\\varepsilon\$} (4)
-(4) edge node [above] {\$c\$} (5)
-;
-\\end{tikzpicture}";
-    echo get_quicklatex_img_url($tikz);
-}
-
-//test();
