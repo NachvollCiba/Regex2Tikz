@@ -156,3 +156,7 @@ input:disabled+label {
     padding: 5px;
     color: brown;
 }
+
+#error p {
+    font-family: monospace;
+}

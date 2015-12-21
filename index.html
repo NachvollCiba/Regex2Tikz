@@ -8,7 +8,7 @@
     <script src="datastructs.js"></script>
     <script src="automaton.js"></script>
     <script src="tikzCreation.js"></script>
-    <script src="autCanvas.js"></script>
+    <script src="canvascontrol.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
 
     <!-- Bootstrap javascript and css-->
@@ -78,7 +78,7 @@
             } catch (e) {
                 console.log(e);
                 console.log(e.stack);
-                $("#error").show().find("p").html(e.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
+                $("#error").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
             }
         }
 

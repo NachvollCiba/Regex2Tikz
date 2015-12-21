@@ -247,20 +247,6 @@ function renameStates(states) {
     }
 }
 
-
-function listOfConnectedStates(state) { // TODO still needed?
-    var allConStates = new Set();
-    for (var conStates of state.transitions.values()) {
-        for (var conState of conStates) {
-            if (conState != state) {
-                allConStates.add(conState);
-            }
-        }
-    }
-
-    return allConStates;
-}
-
 // class for NFA states
 function State(name, isStart, isFinal) {
     if (typeof(isStart)==='undefined') {
@@ -319,22 +305,25 @@ function RegexParser(regex) {
      *
      *  LL(1) - Grammar for regexes:
      *
-     * regex -> term | term "|" regex
+     * regex -> expr EOL
+     * expr -> term ( '|' expr )?
      * term -> factor term?
-     * factor -> atom ("*")*
-     * atom -> alphanum | (regex)
+     * factor -> atom '*'*
+     * atom -> alphanum | (expr)
      */
 
         // PARSER SETUP
     this.origInput = regex.replace(/\s/g, ""); // remove all whitespace
-    this.input = rewriteExpression(this.origInput);
-    this.simpleInput = this.input.slice(0);
+    this.simpleInput = rewriteExpression(this.origInput);
+
+    // working string
+    var input = this.simpleInput.slice(0);
 
     // compute the alphabet used by this regex
     this.alphabet = new Set();
-    for (var i=0; i<this.input.length; i++) {
-        if (validSymbol(this.input[i]) && this.input[i] != "$") {
-            this.alphabet.add(this.input[i]);
+    for (var i=0; i< input.length; i++) {
+        if (validSymbol(input[i]) && input[i] != '$') {
+            this.alphabet.add(input[i]);
         }
     }
 
@@ -355,15 +344,27 @@ function RegexParser(regex) {
 
     this.regex = function() {
         /**
-         * Corresponding grammar rule:
-         * regex -> term | term "|" regex
+         * regex -> expr EOL
+         */
+        var nfa = this.expr();
+
+        if (this.hasInput()) {
+            error(["EOL", "any valid character"], this.peekInput(), input, this.simpleInput);
+        }
+
+        return nfa;
+    };
+
+    this.expr = function() {
+        /**
+         * expr -> term ( '|' expr )?
          */
 
         var next = this.peekInput();
-        if (this.hasInput() && (next == "(" || validSymbol(next))) {
+        if (this.hasInput() && (next == '(' || validSymbol(next))) {
             var nfa = this.term();
         } else {
-            error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
+            error(["'(", "any valid character"], next, input, this.simpleInput);
         }
 
         // check if there is a union term following
@@ -372,11 +373,11 @@ function RegexParser(regex) {
             this.popInput();
 
             next = this.peekInput();
-            if (next != "(" && !validSymbol(next)) {
-                error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
+            if (next != '(' && !validSymbol(next)) {
+                error(["'('", "any valid character"], next, input, this.simpleInput);
             }
 
-            var nfa2 = this.regex();
+            var nfa2 = this.expr();
 
             // retrieve in- and out states
             var in1 = nfa[0], in2 = nfa2[0];
@@ -401,14 +402,13 @@ function RegexParser(regex) {
 
     this.term = function () {
         /**
-         * Corresponding grammar rule:
          * term -> factor term?
          */
 
         var nfa = this.factor();
 
         var next = this.peekInput();
-        if (this.hasInput() && (next == "(" || validSymbol(next))) {
+        if (this.hasInput() && (next == '(' || validSymbol(next))) {
 
             var nfa2 = this.term();
 
@@ -426,8 +426,7 @@ function RegexParser(regex) {
 
     this.factor = function () {
         /**
-         * Corresponding grammar rule:
-         * factor -> atom "*"*
+         * factor -> atom '*'*
          */
 
         var nfa = this.atom();
@@ -458,19 +457,18 @@ function RegexParser(regex) {
 
     this.atom = function () {
         /**
-         * Corresponding grammar rule:
-         * atom -> alphanum | (regex)
+         * atom -> alphanum | '(' expr ')'
          */
 
         var next = this.popInput();
         var nfa;
 
         if (next == '(') {
-            nfa = this.regex();
+            nfa = this.expr();
 
             next = this.popInput();
-            if (next != ")") {
-                error("Expected ')', got '" + next + "'", this.input, this.simpleInput);
+            if (next != ')') {
+                error(["')'"], next, input, this.simpleInput);
             }
         } else if (validSymbol(next)) {
             var _in = new State(this.lastID++);
@@ -481,20 +479,20 @@ function RegexParser(regex) {
             _in.addNextState(next, out);
             nfa = [_in, out];
         } else {
-            error("Expected '(' or any alphanumeric character, got '" + next + "'", this.input, this.simpleInput);
+            error(["'('", "any valid character"], next, input, this.simpleInput);
         }
 
         return nfa;
     };
 
-    // removes and returns the first char from the input string
+// removes and returns the first char from the input string
     this.popInput = function() {
         if (!this.hasInput()) {
             return null;
         }
 
-        var first = this.input[0];
-        this.input = this.input.substring(1);
+        var first = input[0];
+        input = input.substring(1);
         return first;
     };
 
@@ -503,23 +501,28 @@ function RegexParser(regex) {
             return null;
         }
 
-        return this.input[0];
+        return input[0];
     };
 
     this.hasInput = function () {
-        return this.input.length > 0;
+        return input.length > 0;
     };
 
-    function error(message, currentInput, origInput) {
+    function error(expected, got, currentInput, origInput) {
         var pos = origInput.length - currentInput.length;
-        var errorMsg = message;
+
+        got = got == null? "EOL" : "'" + got + "'";
+
+        var expectedStr = expected.join(" or ");
+
+        var errorMsg = "Expected " + expectedStr + ", got " + got;
 
         errorMsg += "\n" + origInput + "\n";
-        for (i = 0; i < origInput.length; i++) {
+        for (i = 0; i <= origInput.length; i++) {
             errorMsg += i == pos? "^" : " ";
         }
 
-        throw (errorMsg);
+        throw new Error(errorMsg);
     }
 }
 
@@ -537,20 +540,11 @@ function cloneAutomaton(aut) {
 }
 
 function validSymbol(symb){
-    // for now, only allow alphanumeric strings to be accepted TODO necessary?
-
     if (symb.length > 1) {
-        return false; // no strings as symbols
-    }
-
-    var code = symb.charCodeAt(0);
-    if (!(code > 47 && code < 58) && // numeric (0-9)
-        !(code > 64 && code < 91) && // upper alpha (A-Z)
-        !(code > 96 && code < 123) &&  // lower alpha (a-z)
-        !(code == 36)) { // dollar sign ($) for the empty word
         return false;
     }
-    return true;
+
+    return symb.match(/\?|\(|\)|\+|\*|\|/) == null; // must not match any special character
 }
 
 

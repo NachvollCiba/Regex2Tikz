@@ -30,6 +30,7 @@ function sub(vec1, vec2) {
 
 function subInPlace(vec, toSub) {
     vec[0] -= toSub[0]; vec[1] -= toSub[1];
+    return vec;
 }
 
 function add(vec1, vec2) {
@@ -38,6 +39,7 @@ function add(vec1, vec2) {
 
 function addInPlace(vec, toAdd) {
     vec[0] += toAdd[0]; vec[1] += toAdd[1];
+    return vec;
 }
 
 function scalarMult(vec, s) {
@@ -46,6 +48,7 @@ function scalarMult(vec, s) {
 
 function scalarMultInPlace(vec, s) {
     vec[0] *= s; vec[1] *= s;
+    return vec;
 }
 
 function scalarDiv(vec, s) {
@@ -67,6 +70,15 @@ function rotate(vec, angle) {
 
 function round(vec) {
     return [Math.round(vec[0]), Math.round(vec[1])];
+}
+
+function roundInPlace(vec) {
+    vec[0] = Math.round(vec[0]); vec[1] = Math.round(vec[1]);
+    return vec;
+}
+
+function clone(vec) {
+    return [vec[0], vec[1]]; // TODO performance benchmark
 }
 
 

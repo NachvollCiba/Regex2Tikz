@@ -169,8 +169,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     function labelDir(fromState, toState) {
-        var dir = (discreetDirection(fromState.position, toState.position) * 2) % DIRECTIONS;
-        return dir;
+        return (discreetDirection(fromState.position, toState.position) * 2) % DIRECTIONS.ALL;
     }
 
     this.drawTransitions = function(ctx) {
@@ -530,7 +529,7 @@ function CanvasController(canvas, automaton, controlElem) {
 
         offsetX /= automaton.length;
         offsetY /= automaton.length;
-        this.automaton.forEach(function(state) {
+        automaton.forEach(function(state) {
             state.position[0] -= offsetX;
             state.position[1] -= offsetY;
             that.updateStatePositional(state);
@@ -540,7 +539,7 @@ function CanvasController(canvas, automaton, controlElem) {
         that.changelistener(selected);
     };
 
-    function updateTransitionDirs(state) { // TODO only update when one state has a loop
+    function updateTransitionDirs(state) {
         state.freeDirs = state.isStart? DIRECTIONS.ALL - DIRECTIONS.LEFT : DIRECTIONS.ALL;
         var dir;
 
@@ -553,10 +552,7 @@ function CanvasController(canvas, automaton, controlElem) {
             state.freeDirs &= ~dir;
         }
 
-        if (state.loop != null) {
-            state.loop.placement = freeDirection(state.freeDirs);
-        }
-
+        state.loop.placement = freeDirection(state.freeDirs);
     }
 
     this.updateStatePositional = function(state) {
@@ -698,12 +694,12 @@ function CanvasController(canvas, automaton, controlElem) {
                         selected.position[1] = selected.canvasPos[1];
                     }
                 } else if (snap == "grid") {
-                    selected.position[0] = Math.round(selected.canvasPos[0] / SNAP_RAD) * SNAP_RAD;
-                    selected.position[1] = Math.round(selected.canvasPos[1] / SNAP_RAD) * SNAP_RAD;
+                    selected.position =
+                        scalarMultInPlace(roundInPlace(scalarDiv(selected.canvasPos, SNAP_RAD)), SNAP_RAD);
                 } else if (snap == "none") {
-                    selected.position[0] = selected.canvasPos[0];
-                    selected.position[1] = selected.canvasPos[1];
+                    selected.position = clone(selected.canvasPos);
                 }
+
 
                 // update aligned states
                 that.updateStatePositional(selected);
@@ -772,11 +768,13 @@ function CanvasController(canvas, automaton, controlElem) {
 
     control.find("#btnCenter").click(function() {
         that.center();
+        that.changelistener(automaton);
     });
 
     control.find("#btnAlign").click(function() {
-        alignAutomaton(automaton, SNAP_RAD);
+        alignAutomaton(automaton, SNAP_RAD*2);
         that.drawAutomaton();
+        that.changelistener(automaton);
     });
 
     control.find("#slSnap").click(function(){

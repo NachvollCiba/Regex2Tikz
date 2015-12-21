@@ -8,8 +8,9 @@ const DIRECTIONS_STRINGS = [null, "left", "below", null, "right", null, null, nu
 
 function convertToTikz(nfa) {
     initializeStateMeta(nfa);
-    layoutAut(nfa);
     computeStateMeta(nfa);
+    layoutAut(nfa);
+    computeLabelPlacement(nfa);
     return generateCode(nfa);
 }
 
@@ -35,31 +36,50 @@ function computeStateMeta(nfa) {
                 if (nextState == state) {
                     loopSymbols.add(symb);
                 } else {
-                    var dir = discreetDirection(state.position, nextState.position);
                     // add the edge to the incoming and outgoing sets
                     var outgoing = state.outgoing.get(nextState);
                     if (!state.outgoing.has(nextState)) {
-                        outgoing = {symbs: symb, placement: (dir*2) % DIRECTIONS.ALL}; // next direction (anti-clockwise)
+                        outgoing = {symbs: symb}; // next direction (anti-clockwise)
                         state.outgoing.set(nextState, outgoing);
                     } else {
                         outgoing.symbs += ", " + symb;
                     }
                     nextState.incoming.add(state);
-
-                    // mark the direction as occupied
-                    state.freeDirs &= ~dir;
-                    nextState.freeDirs &= ~((dir * 4) % DIRECTIONS.ALL);
                 }
             }
         }
 
         // add loop information, if transition was a loop
         if (loopSymbols.size > 0) {
-            state.loop = {
-                symbs: generateAlphabetString(loopSymbols),
-                placement: freeDirection(state.freeDirs)
-            };
+            state.loop = { symbs: generateAlphabetString(loopSymbols)};
         }
+    });
+}
+
+function computeLabelPlacement(nfa) {
+    var looping = new Set();
+
+    nfa.forEach(function(state) {
+        var stateHasLoop = state.loop != null;
+        for (var entry of state.outgoing.entries()) {
+            var nextState = entry[0];
+            var dir = discreetDirection(state.position, nextState.position);
+            entry[1].placement = (dir*2) % DIRECTIONS.ALL;
+
+            // mark the direction as occupied
+            if (stateHasLoop) {
+                state.freeDirs &= ~dir;
+                looping.add(state);
+            }
+
+            if (nextState.loop != null) {
+                nextState.freeDirs &= ~((dir * 4) % DIRECTIONS.ALL);
+            }
+        }
+    });
+
+    looping.forEach(function(state) {
+        state.loop.placement = freeDirection(state.freeDirs);
     });
 }
 
@@ -166,12 +186,6 @@ function layoutAut(states) {
     // put the start state to the left
     states[0].position[0] = -2 * states.length;
 
-    // collect the set of connected states for each state
-    for (var i = 0; i < states.length; i++) {
-        states[i].conStates = listOfConnectedStates(states[i]);
-    }
-
-
     for (var i = 0; i < ITER_THRESHOLD; i++) { // TODO optimization and improvments
         var totalDelta = 0;
         var deltaE = 0;
@@ -194,7 +208,7 @@ function layoutAut(states) {
             addInPlace(movDeltas[x], scalarMult(unit, val));
         }
 
-        for (var x = 0; x < states.length; x++) {
+        for (var x = 0; x < states.length-1; x++) {
             for (var y = x + 1; y < states.length; y++) {
                 var movDelta = [0, 0];
 
@@ -207,7 +221,7 @@ function layoutAut(states) {
                 deltaE += val;
 
                 // compute attracting force for every connected state
-                if (states[x].conStates.has(states[y])) {
+                if (states[x].incoming.has(states[y]) || states[y].incoming.has(states[x])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
                     addInPlace(movDelta, scalarMult(unit, val));
                     deltaD = val;
