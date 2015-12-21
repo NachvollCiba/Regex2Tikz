@@ -23,45 +23,54 @@ function nfa2dfa(nfa, alphabet, withSink) {
     stack.push([startClosure[0], newStart.name]);
     potStates.set(newStart.name, newStart);
 
+    if (withSink) { // generate the sink state
+        var sink = new State("sink", false, false);
+        var sinkReached = false;
+
+        for (var symb of alphabet) {
+            sink.addNextState(symb, sink); // add self loop
+        }
+    }
+
     while (stack.length > 0) {
         var next = stack.shift();
 
         for (var symb of alphabet) {
-            var symbConnected = new Set();
+            var connected = new Set();
             var isFinal = false;
 
             // collect all states that are connected with the alphabet symbol in the original automaton
             for (var curState of next[0]) {
                 curState.nextStates(symb).forEach(function (nextState) {
                     isFinal |= nextState.isFinal;
-                    symbConnected.add(nextState);
+                    connected.add(nextState);
                 });
             }
 
             // build the eps closure of the set
-            var epsConnected = [];
-            for (var conState of symbConnected) {
+            var epsConnectedSets = [];
+            for (var conState of connected) {
                 var closure = epsClosure(conState);
-                epsConnected.push(closure[0]);
+                epsConnectedSets.push(closure[0]);
                 isFinal |= closure[1];
             }
 
             // add all epsilon closures to the set of connected states
-            for (var epsClosureSet of epsConnected) {
+            for (var epsClosureSet of epsConnectedSets) {
                 for (var epsConnected of epsClosureSet) {
-                    symbConnected.add(epsConnected);
+                    connected.add(epsConnected);
                 }
             }
 
-            if (symbConnected.size > 0) {
-                var stateName = powStateName(symbConnected);
+            if (connected.size > 0) {
+                var stateName = powStateName(connected);
 
                 var potState = null;
                 if (potStates.has(stateName)) { // retrieve the state
                     potState = potStates.get(stateName);
                 } else { // create the state and put it on the stack
                     potState = new State(stateName, false, isFinal);
-                    stack.push([symbConnected, stateName]);
+                    stack.push([connected, stateName]);
                     potStates.set(stateName,potState);
                     dfa.push(potState);
                 }
@@ -69,40 +78,19 @@ function nfa2dfa(nfa, alphabet, withSink) {
                 // add the transition
                 var startState = potStates.get(next[1]);
                 startState.addNextState(symb, potState);
+            } else if (withSink) { // add transition to the sink state
+                potStates.get(next[1]).addNextState(symb, sink);
+
+                if (!sinkReached) {
+                    dfa.push(sink);
+                    sinkReached = true;
+                }
             }
         }
-    }
-
-    if (withSink) {
-        generateSinkState(dfa, alphabet);
     }
 
     renameStates(dfa);
     return dfa;
-}
-
-function generateSinkState(automaton, alphabet) {
-    // create sink state
-    var sink = new State(automaton.length, false, false);
-    for (var symb of alphabet) {
-        sink.addNextState(symb, sink); // add self-loops under every symbol
-    }
-
-    // create a transition to the sink state for every symbol that has no transition in a state
-    var sinkIsReached = false;
-    automaton.forEach(function(state) {
-        for (var symb of alphabet) {
-            if (state.nextStates(symb).length === 0) {
-                sinkIsReached = true;
-                state.addNextState(symb, sink);
-            }
-        }
-    });
-
-    // add the sink state to the automaton if it is not redundant
-    if (sinkIsReached) {
-        automaton.push(sink);
-    }
 }
 
 // build a unique name for a powerset state
@@ -349,7 +337,7 @@ function RegexParser(regex) {
         var nfa = this.expr();
 
         if (this.hasInput()) {
-            error(["EOL", "any valid character"], this.peekInput(), input, this.simpleInput);
+            error(["EOL"], this.peekInput(), input, this.simpleInput);
         }
 
         return nfa;

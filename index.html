@@ -1,9 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- TODO
+        - tooltips
+        - ta syntax highlighting
+        - cancel ajax requests on resubmit
+        - text selection on link click
+        -->
+
     <meta charset="UTF-8">
     <title>Regex to Tikz</title>
-    <link rel="stylesheet" type="text/css" href="style.css"/>
 
     <script src="datastructs.js"></script>
     <script src="automaton.js"></script>
@@ -15,21 +21,24 @@
     <link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap.min.css">
     <script src="lib/bootstrap-3.3.6/js/bootstrap.min.js"></script>
 
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+
     <script type="text/javascript">
         var elemData = new Map(); // contains additional data for each id
         // initialization
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
 
-            elemData.set("nfa", {initialized:false, canvasCntrl:null});
-            elemData.set("dfa", {initialized:false, canvasCntrl:null});
-            elemData.set("minDfa", {initialized:false, canvasCntrl:null});
+            elemData.set("nfa", {initialized:false, canvasCntrl:null, tikz:""});
+            elemData.set("dfa", {initialized:false, canvasCntrl:null, tikz:""});
+            elemData.set("minDfa", {initialized:false, canvasCntrl:null, tikz:""});
 
-            $("#statePrefix").on("input", function(event) {
+            $("#statePrefix").on("input", function() {
                 var prefixEmpty = $("#statePrefix").val().trim() == "";
                 $("#cbIndexSubscript").prop("disabled", prefixEmpty);
             });
         });
+
 
         function submit() {
             var regex = $("#regex").val();
@@ -47,7 +56,6 @@
                 } else {
                     $("#nfaDiv").hide();
                 }
-
                 if ($("#showDFA").is(":checked")) {
                     $("#dfaDiv").show();
                     fillResult($("#dfa"), dfa);
@@ -58,8 +66,10 @@
                 fillResult($("#minDfa"), minDfa);
                 $("#result").show();
 
-                if ( !$("#showNFA").is(":checked") && !($("showDFA").is(":checked")) ) {
-                    $("#minDfa").collapse("show");
+                if ( $("#showNFA").is(":checked") || $("showDFA").is(":checked") ) {
+                    collapse($("#minDfa"), "hide");
+                    collapse($("#dfa"), "hide");
+                    collapse($("#nfa"), "hide");
                 }
 
                 // fill the statistics div
@@ -71,53 +81,13 @@
                 $("#simpleRegexDisplay").text(parser.simpleInput);
                 $("#origRegexDisplay").text(parser.origInput);
                 $("#autSizeDisplay").text(minDfa.length);
-                $("#btnUpdate").prop("disabled", false).click(function() {
-                    renameStates(nfa); renameStates(minDfa); renameStates(dfa);
-                    updateAutomatonNames(nfa, dfa, minDfa);
-                });
             } catch (e) {
                 console.log(e);
                 console.log(e.stack);
-                $("#error").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
+                $("#parserError").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
             }
         }
 
-        function updateAutomatonNames(nfa, dfa, minDfa) {
-            var elem, tikz;
-
-            if ($("#showNFA").is(":checked")) {
-                elem = $("#nfa");
-                tikz = generateCode(nfa);
-                elem.find("textarea").val(tikz);
-                fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
-                elemData.get("nfa").canvasCntrl.drawAutomaton();
-            }
-            if ($("#showDFA").is(":checked")) {
-                elem = $("#dfa");
-                tikz = generateCode(dfa);
-                elem.find("textarea").val(tikz);
-                fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
-                elemData.get("dfa").canvasCntrl.drawAutomaton();
-            }
-
-            elem = $("#minDfa");
-            tikz = generateCode(minDfa);
-            elem.find("textarea").val(tikz);
-            fetchLatexRenderedPng(tikz, elem.find("img"), elem.find("#btnRender"));
-            elemData.get("minDfa").canvasCntrl.drawAutomaton();
-        }
-
-        function revealElem(elem, anchor, showText, hideText) {
-            elem.collapse("toggle" );
-
-            if (elem.attr("aria-expanded") == "true") {
-                anchor.text(hideText);
-            } else {
-                anchor.text(showText);
-            }
-
-            window.scroll(0, elem.offset().top);
-        }
 
         function fillResult(elem, automaton) {
             var id = elem.attr("id");
@@ -150,7 +120,12 @@
                 var tikzDispl = elem.find("textarea");
                 var renderImg = elem.find("img");
                 renderBtn.click(function() {
-                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
+                });
+
+                // user must not edit the text area, but we cannot disable it because we still need to receive events
+                tikzDispl.bind("input propertychange", function(event) {
+                    tikzDispl.val(data.tikz);
                 });
 
                 elem.find("#btnClipboard").click(function() {
@@ -178,21 +153,24 @@
 
             // populate the element contents
             tikzDispl.val(convertToTikz(automaton));
-            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn);
+            data.tikz = tikzDispl.val();
+            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
 
             // update the canvas
             var cntrl = data.canvasCntrl;
             cntrl.loadAutomaton(automaton);
-            cntrl.changelistener = function(state) {
+            cntrl.changelistener = function() {
                 tikzDispl.val(generateCode(automaton));
+                data.tikz = tikzDispl.val();
             };
 
             cntrl.drawAutomaton();
         }
 
-        function fetchLatexRenderedPng(tikz, img, button) {
+        function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
             button.prop("disabled", true);
-            img.attr("src", "img/loading.gif").attr("width", "128");
+            img.attr("src", "img/loading.gif").attr("width", "128").show();
+            errorDiv.hide();
 
             $.ajax({
                 url: encodeURI("render.php"),
@@ -206,14 +184,56 @@
 
                     // adjust DOM elements
                     button.prop("disabled", false);
-                    img.attr("src", response["url"]).attr("width", width);
+
+                    if (response["status"] == "success") {
+                        img.attr("src", response["url"]).attr("width", width);
+                    } else {
+                        img.attr("src", "").hide();
+                        errorDiv.show().find("p")
+                                .html(response["message"]);
+                    }
                 },
                 error: function (xhr, textStatus) {
-                    img.attr("src", ""); // TODO some sort of error img or something
+                    img.attr("src", "").hide();
                     button.prop("disabled", false);
-                    alert("Error " + xhr.status + ": " + xhr.statusText + ", " + textStatus);
+                    errorDiv.show().find("p")
+                            .html("Error connecting to <a href=http://regex2tikz.uncompilable.com>uncompilable.com</a>");
                 }
             });
+        }
+
+        function toggleOptions() {
+            var wrapper = $("#optionsWrapper").collapse("toggle");
+
+            if (wrapper.attr("aria-expanded") == "true") {
+                $("#optionsShowHide").text("[-] Hide options");
+            } else {
+                $("#optionsShowHide").text("[+] Show options");
+            }
+        }
+
+        function collapse(elem, how) {
+            switch (how) {
+                case "toggle":
+                    if (elem.is(":visible")) {
+                        elem.hide();
+                        elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▲/, "▼"));
+                    } else {
+                        elem.show();
+                        elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
+                        window.scroll(0, elem.offset().top);
+                    }
+                    break;
+                case "show":
+                    elem.show();
+                    elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
+                    window.scroll(0, elem.offset().top);
+                    break;
+                case "hide":
+                    elem.hide();
+                    elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▲/, "▼"));
+                    break;
+            }
         }
     </script>
 </head>
@@ -223,7 +243,7 @@
 <body>
 <h1>Regex<em>2</em>Ti<em>k</em>Z</h1>
 <p>
-<em>A simple tool for converting a regular expression into Ti<em>k</em>Z code for the corresponding automaton.</em>
+    <em>A simple tool for converting a regular expression into Ti<em>k</em>Z code for the corresponding automaton.</em>
 </p>
 <div class="group" id="input">
     <div id="inputInner">
@@ -233,19 +253,17 @@
     </div>
 
 
-    <div id="error" hidden>
+    <div class="error" id="parserError" hidden>
         <h4>Error!</h4>
         <p></p>
     </div>
 
     <hr width="75%" class="split1">
 
-    <b id="optionShowHide" class="spoilerLink"
-          onclick="revealElem($('#options'), $('#optionShowHide'), '[+] Show options', '[-] Hide options');">
-        [+] Show options
-    </b>
-    <div id="options" class="collapse left">
-        <table><tbody>
+    <b id="optionsShowHide" class="spoilerLink" onclick="toggleOptions();">[+] Show options</b>
+    <div id="optionsWrapper" class="collapse">
+        <div id="options" class="left">
+            <table><tbody>
             <tr>
                 <td class="left">Symbol to use for the empty word: </td>
                 <td class="left" colspan="2"><input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"></td>
@@ -264,12 +282,6 @@
                 <td class="left" colspan="2"><input type="number" id="numberStart" value="0"></td>
             </tr>
             <tr>
-                <td colspan="3">
-                    <button type="button" class="btn btn-primary" style="width:40%; margin-top:5px !important"
-                            disabled id="btnUpdate">Update automaton</button>
-                </td>
-            </tr>
-            <tr>
                 <td style="padding-top:15px !important" class="left" colspan="1">
                     <input type="checkbox" id="showNFA">
                     <label for="showNFA">Also show NFA</label>
@@ -282,7 +294,8 @@
             <tr>
                 <td class="left" colspan="3"><label><input type="checkbox" id="generateSink">Generate sink state</label></td>
             </tr>
-        </tbody></table>
+            </tbody></table>
+        </div>
     </div>
 
     <hr width="75%" class="split1">
@@ -310,24 +323,24 @@
     </table>
 </div>
 <div hidden id="result">
-    <div class="group" id="nfaDiv">
-        <h2 id="nfaHeader" class="spoilerLink"
-            onclick="revealElem($('#nfa'), $('#nfaHeader'),'Resulting NFA &#x25BC;' ,'Resulting NFA &#x25B2;')">
-            Resulting NFA &#x25BC;</h2>
-        <div id="nfa" class="collapse"></div></div>
+    <div class="group result" id="nfaDiv">
+        <h2 id="nfaHeader" class="spoilerLink" onclick="collapse($('#nfa'), 'toggle');">
+            Resulting NFA &#x25BC;
+        </h2>
+        <div id="nfa" hidden></div></div>
 
-    <div class="group" id="dfaDiv">
-        <h2 id="dfaHeader" class="spoilerLink"
-            onclick="revealElem($('#dfa'), $('#dfaHeader'),'Non-minimal powerset DFA &#x25BC;' ,'Non-minimal powerset DFA &#x25B2;')">
-            Non-minimal powerset DFA &#x25BC;</h2>
-        <div id="dfa" class="collapse"></div></div>
+    <div class="group result" id="dfaDiv">
+        <h2 id="dfaHeader" class="spoilerLink" onclick="collapse($('#dfa'), 'toggle');">
+            Non-minimal powerset DFA &#x25BC;
+        </h2>
+        <div id="dfa" hidden></div></div>
 
-    <div class="group" id="minDfaDiv">
-        <h2 id="minDfaHeader" class="spoilerLink"
-            onclick="revealElem($('#minDfa'), $('#minDfaHeader'),'Minimized DFA &#x25BC;' ,'Minimized DFA &#x25B2;')">
-            Minimized DFA &#x25BC;</h2>
+    <div class="group result" id="minDfaDiv">
+        <h2 id="minDfaHeader" class="spoilerLink" onclick="collapse($('#minDfa'), 'toggle');">
+            Minimized DFA &#x25BC;
+        </h2>
 
-        <div id="minDfa" class="collapse">
+        <div id="minDfa" hidden>
             <hr width="90%">
             <ul class="nav nav-tabs">
                 <li class="active">
@@ -347,6 +360,7 @@
                     <button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
                 </div>
                 <div class="tab-pane" id="latex_minDfa">
+                    <div hidden class="error"><h4>No preview available.</h4><p></p></div>
                     <img src="" class="autDisplay"/> <br>
                     <button type="button" class="btn btn-primary" id="btnRender">Render again...</button><br>
                     <span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
@@ -354,16 +368,16 @@
                 <div class="tab-pane" id="structure_minDfa">
                     <div class="canvasControl">
                         <table><tbody><tr>
-                        <td><label><input type="checkbox" id="cbGrid"> Show Grid</label></td>
-                        <td><button type="button" class="btn btn-default" id="btnZoomIn">+</button>
-                        <button type="button" class="btn btn-default" id="btnZoomOut">-</button></td>
-                        <td><button type="button" class="btn btn-default" id="btnCenter">Center</button>
-                        <button type="button" class="btn btn-default" id="btnAlign">Align to grid</button></td>
-                        <td><label>Snap to <select id="slSnap">
-                            <option value="grid">Grid</option>
-                            <option value="neighbour">Neighbour</option>
-                            <option value="none">Nothing</option>
-                        </select></label></td>
+                            <td><label><input type="checkbox" id="cbGrid"> Show Grid</label></td>
+                            <td><button type="button" class="btn btn-default" id="btnZoomIn">+</button>
+                                <button type="button" class="btn btn-default" id="btnZoomOut">-</button></td>
+                            <td><button type="button" class="btn btn-default" id="btnCenter">Center</button>
+                                <button type="button" class="btn btn-default" id="btnAlign">Align to grid</button></td>
+                            <td><label>Snap to <select id="slSnap">
+                                <option value="grid">Grid</option>
+                                <option value="neighbour">Neighbour</option>
+                                <option value="none">Nothing</option>
+                            </select></label></td>
                         </tr></tbody></table>
                     </div>
                     <hr class="split2">
@@ -372,7 +386,6 @@
             </div>
         </div>
     </div>
-
 </div>
 <!-- datalists -->
 <datalist id="emptyWordList">
@@ -384,10 +397,9 @@
 <datalist id="regexList">
     <option value="abc"></option>
     <option value="(a|b)*c"></option>
-    <option value="(a|b|c)*a(a|b|c)*b(a|b|c)*c(a|b|c)*"></option>
-    <option value="(a|c)c* (a(a|c))*b(acc*a | c(ca*c)*a)"></option>
+    <option value="0|1(0|1)*"></option>
     <option value="(a|c)* a(a|c)* b(a|c)* c(a|c)* | (a|c)* c(a|c)* b(a|c)* a(a|c)*"></option>
-    <option value="a?(bc)+de+(f(g|h))?"></option>
+    <option value="a?(b*c)+de+(f(g|h))?"></option>
 </datalist>
 </body>
 </html>
