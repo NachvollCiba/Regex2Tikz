@@ -2,9 +2,7 @@
 <html lang="en">
 <head>
     <!-- TODO
-        - tooltips
         - ta syntax highlighting
-        - text selection on link click
         -->
 
     <meta charset="UTF-8">
@@ -15,6 +13,11 @@
     <script src="tikzCreation.js"></script>
     <script src="canvascontrol.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
+
+    <!-- codemirror -->
+    <script src="lib/codemirror.js"></script>
+    <link rel="stylesheet" href="lib/codemirror.css">
+    <script src="lib/stex.js"></script>
 
     <!-- Bootstrap javascript and css-->
     <link rel="stylesheet" href="lib/bootstrap-3.3.6/css/bootstrap.min.css">
@@ -29,9 +32,9 @@
         $(function () {
             $('[data-toggle="tooltip"]').tooltip();
 
-            elemData.set("nfa", {initialized:false, canvasCntrl:null, tikz:""});
-            elemData.set("dfa", {initialized:false, canvasCntrl:null, tikz:""});
-            elemData.set("minDfa", {initialized:false, canvasCntrl:null, tikz:""});
+            elemData.set("nfa", {initialized:false, canvasCntrl:null, tikz:"", displ:null});
+            elemData.set("dfa", {initialized:false, canvasCntrl:null, tikz:"", displ:null});
+            elemData.set("minDfa", {initialized:false, canvasCntrl:null, tikz:"", displ:null});
 
             $("#statePrefix").on("input", function() {
                 var prefixEmpty = $("#statePrefix").val().trim() == "";
@@ -112,9 +115,12 @@
                     cloned.find("#structure_minDfa").attr("id", "structure_" + id);
                     cloned.find("#structuretab_minDfa").attr("id", "structuretab_"+id).attr("href", "#structure_"+id);
 
+                    cloned.find("#tikzNode").empty();
+
                     elem.replaceWith(cloned);
                     elem = cloned;
                 }
+
 
                 // initialize the controller for this automaton's canvas
                 var canvas = elem.find("canvas");
@@ -122,51 +128,50 @@
 
                 // bind the function for the render button
                 var renderBtn = elem.find("#btnRender");
-                var tikzDispl = elem.find("textarea");
+                var tikzDispl = CodeMirror(elem.find("#tikzNode")[0], {
+                    readOnly : true,
+                    lineNumbers: true
+                });
+
+                tikzDispl.on("focus", function() {
+                    tikzDispl.execCommand("selectAll");
+                });
+
+                tikzDispl.on("blur", function() {
+                    tikzDispl.setCursor({line:0,ch:0}); // clear selection
+                });
+
+                data.displ = tikzDispl;
                 var renderImg = elem.find("img");
+
                 renderBtn.click(function() {
                     fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
                 });
 
-                // user must not edit the text area, but we cannot disable it because we still need to receive events
-                tikzDispl.bind("input propertychange", function(event) {
-                    tikzDispl.val(data.tikz);
-                });
-
                 elem.find("#btnClipboard").click(function() {
-                    tikzDispl.select(); // select all the text
+                    tikzDispl.focus();
                     document.execCommand("copy"); // copy to clipboard
-
-                    // unselect the text (browser-dependant)
-                    if (window.getSelection) {
-                        if (window.getSelection().empty) {  // Chrome
-                            window.getSelection().empty();
-                        } else if (window.getSelection().removeAllRanges) {  // Firefox
-                            window.getSelection().removeAllRanges();
-                        }
-                    } else if (document.selection) {  // IE
-                        document.selection.empty();
-                    }
+                    this.focus();
                 });
 
                 data.initialized = true;
             } else { // find all the (existing) elements
-                tikzDispl = elem.find("textarea");
+                tikzDispl = data.displ;
                 renderImg = elem.find("img");
                 renderBtn = elem.find("#btnRender");
             }
 
             // populate the element contents
-            tikzDispl.val(convertToTikz(automaton));
-            data.tikz = tikzDispl.val();
-            fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
+            tikzDispl.setValue(convertToTikz(automaton));
+            data.tikz = tikzDispl.getValue();
+            fetchLatexRenderedPng(data.tikz, renderImg, renderBtn, elem.find(".error"));
 
             // update the canvas
             var cntrl = data.canvasCntrl;
             cntrl.loadAutomaton(automaton);
             cntrl.changelistener = function() {
                 tikzDispl.val(generateCode(automaton));
-                data.tikz = tikzDispl.val();
+                data.tikz = tikzDispl.getValue();
             };
 
             cntrl.drawAutomaton();
@@ -232,12 +237,14 @@
                         elem.show();
                         elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
                         window.scroll(0, elem.offset().top);
+                        elemData.get(elem.attr("id")).displ.refresh();
                     }
                     break;
                 case "show":
                     elem.show();
                     elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
                     window.scroll(0, elem.offset().top);
+                    elemData.get(elem.attr("id")).displ.refresh();
                     break;
                 case "hide":
                     elem.hide();
@@ -253,7 +260,7 @@
 <body>
 <h1>Regex<em>2</em>Ti<em>k</em>Z</h1>
 <p>
-    <em>A simple tool for converting a regular expression into Ti<em>k</em>Z code for the corresponding automaton.</em>
+    <em>A simple tool for converting a regular expression to Ti<em>k</em>Z code for the corresponding automaton.</em>
 </p>
 <div class="group" id="input">
     <div id="inputInner">
@@ -278,8 +285,7 @@
                 <td class="left">Symbol to use for the empty word: </td>
                 <td class="left" colspan="2"><input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"></td>
             </tr>
-            <tr data-toggle="tooltip" data-placement="right" title="Specifiy a prefix to apply to each state label (e.g.,
-    if you write 'q' then the states will be named q0, q1, ...)">
+            <tr>
                 <td class="left">State name prefix: </td>
                 <td class="left"><input type="text" id="statePrefix" value=""></td>
                 <td class="left">
@@ -366,7 +372,8 @@
 
             <div class="tab-content">
                 <div class="tab-pane active" id="tikz_minDfa">
-                    <textarea rows="20" cols="60" class="autDisplay" onclick="this.focus(); this.select();"></textarea><br>
+                    <!--textarea rows="20" cols="60" class="autDisplay" onclick="this.focus(); this.select();"></textarea><br-->
+                    <div id="tikzNode"></div>
                     <button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
                 </div>
                 <div class="tab-pane" id="latex_minDfa">

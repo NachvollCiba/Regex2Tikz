@@ -45,6 +45,12 @@ textarea {
     text-decoration: none;
     margin-bottom: 0px;
     padding-bottom: 10px;
+
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
 }
 
 .spoilerLink:hover {
@@ -78,8 +84,8 @@ textarea {
 }
 
 .btn-primary {
-    color: cadetblue;
-    border-radius: 10px;
+    width: 80%;
+    margin: 10px auto;
 }
 
 .nav-tabs > li > a {
@@ -104,6 +110,23 @@ textarea {
 
 .resultHead {
     clear:both;
+}
+
+.CodeMirror {
+    background-color: #e5e5e5;
+}
+
+.CodeMirror-selected {
+    background-color: #6773ff !important;
+}
+
+.CodeMirror-linenumbers {
+    background-color: darkgray;
+    border-right: solid 1px black;
+}
+
+.CodeMirror-linenumber {
+    color: white !important;
 }
 
 .split1 {
@@ -145,6 +168,14 @@ textarea {
 #options > table {
     width: 100%;
     margin: 10px;
+}
+
+#tikzNode {
+    text-align: left;
+    width: 80%;
+    margin: 10px auto;
+    background-color: lightgray;
+    border: solid 1px black;
 }
 
 #optionShowHide {
