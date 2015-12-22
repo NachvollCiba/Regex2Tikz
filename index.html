@@ -10,7 +10,7 @@
     <script src="tikzCreation.js"></script>
     <script src="canvascontrol.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
-    <script src="lib/es6-shim.min.js"></script>
+    <!--<script src="lib/es6-shim.min.js"></script>-->
 
     <!-- codemirror -->
     <script src="lib/codemirror.js"></script>
@@ -91,7 +91,6 @@
                 $("#origRegexDisplay").text(parser.origInput);
                 $("#autSizeDisplay").text(minDfa.length);
             } catch (e) {
-                console.log(e);
                 console.log(e.stack);
                 $("#parserError").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br>"));
             }
@@ -346,7 +345,7 @@
 <div hidden id="result">
     <div class="group result" id="nfaDiv">
         <h2 id="nfaHeader" class="spoilerLink" onclick="collapse($('#nfa'), 'toggle');">
-            Resulting NFA &#x25BC;
+            NFA &#x25BC;
         </h2>
         <div id="nfa" hidden></div></div>
 

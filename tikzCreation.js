@@ -221,11 +221,13 @@ function layoutAut(states) {
         }
 
         for (var x = 0; x < states.length-1; x++) {
+
             for (var y = x + 1; y < states.length; y++) {
                 var movDelta = [0, 0];
 
                 if (equal(states[x].position, states[y].position)) {
                     // add random vector to avoid divide-by-zero
+                    //console.log(states[x].position);
                     addInPlace(states[x].position, [Math.random() + .001, Math.random() + .001]);
                 }
 
@@ -238,7 +240,7 @@ function layoutAut(states) {
                 // compute attracting force for every connected state
                 if (states[x].incoming.has(states[y]) || states[y].incoming.has(states[x])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
-                    addInPlace(movDelta, scalarMult(unit, val));
+                    addInPlace(movDelta, scalarMult(unit, Math.max(-100, val)));
                 }
 
 
