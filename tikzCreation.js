@@ -132,7 +132,7 @@ function generateTransitionsCode(state) {
 
     // create code for loop
     if (state.loop != null) {
-        result += "\tedge [loop " + DIRECTIONS_STRINGS[state.loop.placement] + "] node ["
+        result += " edge [loop " + DIRECTIONS_STRINGS[state.loop.placement] + "] node ["
             + DIRECTIONS_STRINGS[state.loop.placement]
             + "] {\$" + state.loop.symbs +  "\$} ()\n";
     }
@@ -142,15 +142,19 @@ function generateTransitionsCode(state) {
         var toName = toInternalID(entry[0].name);
 
         if (state.incoming.has(entry[0])) {
-            result += "\tedge [bend right = 30] node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
+            result += " edge [bend right = 30] node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
         } else {
-            result += "\tedge node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
+            result += " edge node [" + DIRECTIONS_STRINGS[entry[1].placement] + "] {\$";
         }
 
         result +=  entry[1].symbs + "\$} (" + toName + ")\n";
     }
 
     return result;
+}
+
+function fill(str, to) {
+    return str + " ".repeat(Math.max(to, 0));
 }
 
 function generateAlphabetString(alphSet, eps) {
@@ -222,7 +226,7 @@ function layoutAut(states) {
 
                 if (equal(states[x].position, states[y].position)) {
                     // add random vector to avoid divide-by-zero
-                    addInPlace(states[x].position, [Math.random(), Math.random()]);
+                    addInPlace(states[x].position, [Math.random() + .001, Math.random() + .001]);
                 }
 
                 // compute repulsive force for every other state

@@ -1,10 +1,7 @@
 <!DOCTYPE html>
+<!--suppress ALL -->
 <html lang="en">
 <head>
-    <!-- TODO
-        - ta syntax highlighting
-        -->
-
     <meta charset="UTF-8">
     <title>Regex to Tikz</title>
 
@@ -13,6 +10,7 @@
     <script src="tikzCreation.js"></script>
     <script src="canvascontrol.js"></script>
     <script src="lib/jquery-1.11.3.min.js"></script>
+    <script src="lib/es6-shim.min.js"></script>
 
     <!-- codemirror -->
     <script src="lib/codemirror.js"></script>
@@ -58,26 +56,29 @@
 
                 // adjust the DOM to show the resulting automatons
                 var showNfa = $("#showNFA").is(":checked"); var showDfa = $("#showDFA").is(":checked");
+                var nfaDiv = $("#nfa");
+                var dfaDiv = $("#dfa");
+                var minDfaDiv = $("#minDfa");
                 if (showNfa) {
                     $("#nfaDiv").show();
-                    fillResult($("#nfa"), nfa);
+                    fillResult(nfaDiv, nfa);
                 } else {
                     $("#nfaDiv").hide();
                 }
                 if (showDfa) {
                     $("#dfaDiv").show();
-                    fillResult($("#dfa"), dfa);
+                    fillResult(dfaDiv, dfa);
                 } else {
                     $("#dfaDiv").hide();
                 }
 
-                fillResult($("#minDfa"), minDfa);
+                fillResult(minDfaDiv, minDfa);
                 $("#result").show();
 
                 if (showNfa || showDfa) {
-                    collapse($("#minDfa"), "hide");
-                    collapse($("#dfa"), "hide");
-                    collapse($("#nfa"), "hide");
+                    collapse(minDfaDiv, "hide");
+                    collapse(dfaDiv, "hide");
+                    collapse(nfaDiv, "hide");
                 }
 
                 // fill the statistics div
@@ -145,13 +146,17 @@
                 var renderImg = elem.find("img");
 
                 renderBtn.click(function() {
-                    fetchLatexRenderedPng(tikzDispl.val(), renderImg, renderBtn, elem.find(".error"));
+                    fetchLatexRenderedPng(data.tikz, renderImg, renderBtn, elem.find(".error"));
                 });
 
                 elem.find("#btnClipboard").click(function() {
                     tikzDispl.focus();
                     document.execCommand("copy"); // copy to clipboard
                     this.focus();
+                });
+
+                elem.find("#tikztab_" + id).on('shown.bs.tab', function (e) {
+                    data.displ.refresh();
                 });
 
                 data.initialized = true;
@@ -170,7 +175,7 @@
             var cntrl = data.canvasCntrl;
             cntrl.loadAutomaton(automaton);
             cntrl.changelistener = function() {
-                tikzDispl.val(generateCode(automaton));
+                tikzDispl.setValue(generateCode(automaton));
                 data.tikz = tikzDispl.getValue();
             };
 
@@ -205,7 +210,7 @@
 
                     ajaxRequests.delete(ajaxRequest);
                 },
-                error: function (xhr, textStatus) {
+                error: function () {
                     img.attr("src", "").hide();
                     button.prop("disabled", false);
                     errorDiv.show().find("p")
@@ -372,7 +377,6 @@
 
             <div class="tab-content">
                 <div class="tab-pane active" id="tikz_minDfa">
-                    <!--textarea rows="20" cols="60" class="autDisplay" onclick="this.focus(); this.select();"></textarea><br-->
                     <div id="tikzNode"></div>
                     <button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
                 </div>

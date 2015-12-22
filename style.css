@@ -1,12 +1,12 @@
 body {
-    text-align: center !important;
+    text-align: center;
     width: 600px;
-    margin:auto !important;
+    margin: auto;
 }
 
 td {
-    padding-top: 2px !important;
-    padding-right: 7px !important;
+    padding-top: 2px;
+    padding-right: 7px;
 }
 
 table {
@@ -15,7 +15,7 @@ table {
 }
 
 label {
-    font-weight: 100 !important;
+    font-weight: 100;
 }
 
 input:disabled+label {
@@ -54,9 +54,9 @@ textarea {
 }
 
 .spoilerLink:hover {
-    cursor: pointer !important;
-    color: brown !important;
-    text-decoration: none !important;
+    cursor: pointer;
+    color: brown;
+    text-decoration: none;
 }
 
 .canvasControl {
@@ -91,21 +91,21 @@ textarea {
 .nav-tabs > li > a {
     background-color: #eeeeee;
     color: cadetblue;
-    -webkit-border-radius: 0px !important;
-    -moz-border-radius: 0px !important;
-    border-radius: 0px !important;
-    margin-right:0px !important;
-    margin-left:2px !important;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    margin-right: 0px;
+    margin-left: 2px;
 }
 
 .nav-tabs > li > a:hover {
-    background-color: brown !important;
-    color: white !important;
+    background-color: brown;
+    color: white;
 }
 
 .nav-tabs > li.active > a{
-    color: brown !important;
-    background-color: white !important;
+    color: brown;
+    background-color: white;
 }
 
 .resultHead {
@@ -116,17 +116,13 @@ textarea {
     background-color: #e5e5e5;
 }
 
-.CodeMirror-selected {
-    background-color: #6773ff !important;
-}
-
 .CodeMirror-linenumbers {
     background-color: darkgray;
     border-right: solid 1px black;
 }
 
 .CodeMirror-linenumber {
-    color: white !important;
+    color: white;
 }
 
 .split1 {

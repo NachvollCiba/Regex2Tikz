@@ -36,6 +36,7 @@ function CanvasController(canvas, automaton, controlElem) {
     this.drawAutomaton = function() {
         var ctx = canvas[0].getContext("2d");
         //ctx.clearRect(0, 0, canvas[0].width, canvas[0].height);
+        //noinspection SillyAssignmentJS
         canvas[0].width = canvas[0].width;
 
         if (showGrid) {
@@ -739,7 +740,7 @@ function CanvasController(canvas, automaton, controlElem) {
         }
     };
 
-    this.canvasMouseExit = function(event) {
+    this.canvasMouseExit = function () {
         reset();
     };
 

@@ -4,6 +4,8 @@
  * User: dennis
  * Date: 05/11/15
  * Time: 22:03
+ * @param $string
+ * @return mixed
  */
 
 
@@ -32,8 +34,6 @@ function get_quicklatex_img_url($tikz) {
 
 
     if ($formula !== "") {
-
-
         // build the body of the POST request
         $body = "formula=" . $formula;
         $body .= "&fsize=" . $fontsize;
@@ -87,7 +87,9 @@ function get_quicklatex_img_url($tikz) {
             }
         }
     }
-
+    return json_encode(array(
+                           "status" => "error",
+                           "message" => "Encountered an unspecified error"));
 }
 
 // return the url of the rendered latex image

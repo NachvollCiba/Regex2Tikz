@@ -273,6 +273,7 @@ function State(name, isStart, isFinal) {
     };
 
     this.randomNextState = function(symb) {
+        //noinspection LoopStatementThatDoesntLoopJS
         for (var state of this.nextStates(symb)) {
             return state;
         }
