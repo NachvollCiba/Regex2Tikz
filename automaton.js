@@ -505,9 +505,11 @@ function RegexParser(regex) {
 
         var errorMsg = "Expected " + expectedStr + ", got " + got;
 
-        errorMsg += "\n" + origInput + "\n";
-        for (i = 0; i <= origInput.length; i++) {
-            errorMsg += i == pos? "^" : " ";
+        if (origInput != null && origInput.length > 0) {
+            errorMsg += "\n" + origInput + "\n";
+            for (i = 0; i <= origInput.length; i++) {
+                errorMsg += i == pos ? "^" : " ";
+            }
         }
 
         throw new Error(errorMsg);

@@ -4,7 +4,6 @@
     <!-- TODO
         - tooltips
         - ta syntax highlighting
-        - cancel ajax requests on resubmit
         - text selection on link click
         -->
 
@@ -24,6 +23,7 @@
     <link rel="stylesheet" type="text/css" href="style.css"/>
 
     <script type="text/javascript">
+        var ajaxRequests = new Set(); // last ajax requests
         var elemData = new Map(); // contains additional data for each id
         // initialization
         $(function () {
@@ -41,6 +41,10 @@
 
 
         function submit() {
+            for (var ajaxRequest of ajaxRequests) { // abort any previous ajax requests
+                ajaxRequest.abort();
+            }
+
             var regex = $("#regex").val();
             try {
                 // parse the regex and create the automatons
@@ -50,13 +54,14 @@
                 var minDfa = minimize(dfa);
 
                 // adjust the DOM to show the resulting automatons
-                if ($("#showNFA").is(":checked")) {
+                var showNfa = $("#showNFA").is(":checked"); var showDfa = $("#showDFA").is(":checked");
+                if (showNfa) {
                     $("#nfaDiv").show();
                     fillResult($("#nfa"), nfa);
                 } else {
                     $("#nfaDiv").hide();
                 }
-                if ($("#showDFA").is(":checked")) {
+                if (showDfa) {
                     $("#dfaDiv").show();
                     fillResult($("#dfa"), dfa);
                 } else {
@@ -66,7 +71,7 @@
                 fillResult($("#minDfa"), minDfa);
                 $("#result").show();
 
-                if ( $("#showNFA").is(":checked") || $("showDFA").is(":checked") ) {
+                if (showNfa || showDfa) {
                     collapse($("#minDfa"), "hide");
                     collapse($("#dfa"), "hide");
                     collapse($("#nfa"), "hide");
@@ -75,7 +80,7 @@
                 // fill the statistics div
                 var alpha = [];
                 parser.alphabet.forEach(function(symb) { alpha.push(symb) });
-                $("#error").hide();
+                $("#parserError").hide();
                 $("#statistics").show();
                 $("#alphDisplay").text("{" + alpha.sort() + "}");
                 $("#simpleRegexDisplay").text(parser.simpleInput);
@@ -172,7 +177,7 @@
             img.attr("src", "img/loading.gif").attr("width", "128").show();
             errorDiv.hide();
 
-            $.ajax({
+            var ajaxRequest = $.ajax({
                 url: encodeURI("render.php"),
                 type: "POST",
                 data: "tikz=" + tikz,
@@ -192,14 +197,19 @@
                         errorDiv.show().find("p")
                                 .html(response["message"]);
                     }
+
+                    ajaxRequests.delete(ajaxRequest);
                 },
                 error: function (xhr, textStatus) {
                     img.attr("src", "").hide();
                     button.prop("disabled", false);
                     errorDiv.show().find("p")
                             .html("Error connecting to <a href=http://regex2tikz.uncompilable.com>uncompilable.com</a>");
+
+                    ajaxRequests.delete(ajaxRequest);
                 }
             });
+            ajaxRequests.add(ajaxRequest);
         }
 
         function toggleOptions() {
