@@ -740,16 +740,16 @@ function CanvasController(canvas, automaton, controlElem) {
         }
     };
 
-    this.canvasMouseExit = function () {
+    this.canvasMouseOver = function () {
         reset();
     };
 
     // register the listeners
-    canvas.on("touchstart");
-    canvas.mouseup(this.canvasMouseUp);
-    canvas.mousedown(this.canvasMouseDown);
-    canvas.mousemove(this.canvasMouseMove);
-    canvas.mouseleave(this.canvasMouseExit);
+    //canvas.on("tap", this.canvasMouseDown);
+    canvas.on("vmouseup", this.canvasMouseUp);
+    canvas.on("vmousedown", this.canvasMouseDown);
+    canvas.on("vmousemove", this.canvasMouseMove);
+    canvas.on("vmouseover", this.canvasMouseOver);
     canvas.bind('mousewheel DOMMouseScroll', this.canvasMouseWheel);
 
     // register listeners for the control panel
