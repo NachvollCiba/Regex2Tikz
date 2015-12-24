@@ -745,6 +745,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     // register the listeners
+    canvas.on("touchstart");
     canvas.mouseup(this.canvasMouseUp);
     canvas.mousedown(this.canvasMouseDown);
     canvas.mousemove(this.canvasMouseMove);
