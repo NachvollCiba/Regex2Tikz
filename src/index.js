@@ -82,7 +82,6 @@ function submit() {
 		}
 
 		fillResult(minDfaDiv, minDfa);
-		console.log("result filled");
 
 		if (showNfa || showDfa) {
 			collapse(minDfaDiv, "hide");
@@ -181,7 +180,6 @@ function fillResult(elem, automaton) {
 		data.tikz = tikzDispl.getValue();
 	};
 
-	console.log("draw");
 	cntrl.drawAutomaton();
 }
 

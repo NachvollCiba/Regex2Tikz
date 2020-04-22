@@ -1,197 +1,197 @@
 td {
-    padding-top: 2px;
-    padding-right: 7px;
+	padding-top: 2px;
+	padding-right: 7px;
 }
 
 table {
-    margin: auto;
-    text-align:center;
+	margin: auto;
+	text-align:center;
 }
 
 label {
-    font-weight: 100;
+	font-weight: 100;
 }
 
 input:disabled+label {
-    color:#ccc;
+	color:#ccc;
 }
 
 textarea {
-    background-color: lightgray;
+	background-color: lightgray;
 }
 
 .group{
-    margin: 5px;
-    padding: 3px;
-    border: solid 1px cadetblue;
+	margin: 5px;
+	padding: 3px;
+	border: solid 1px cadetblue;
 }
 
 .left {
-    text-align: left;
+	text-align: left;
 }
 
 .right {
-    text-align: right;
+	text-align: right;
 }
 
 .spoilerLink {
-    color: black;
-    text-decoration: none;
-    margin-bottom: 0px;
-    padding-bottom: 10px;
+	color: black;
+	text-decoration: none;
+	margin-bottom: 0px;
+	padding-bottom: 10px;
 
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -o-user-select: none;
-    user-select: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	user-select: none;
 }
 
 .spoilerLink:hover {
-    cursor: pointer;
-    color: brown;
-    text-decoration: none;
+	cursor: pointer;
+	color: brown;
+	text-decoration: none;
 }
 
 .canvasControl {
-    margin-top: 10px;
-    margin-bottom: 5px;
+	margin-top: 10px;
+	margin-bottom: 5px;
 }
 
 
 .canvasControl td {
-    margin-left: 5px;
-    padding-left: 5px;
-    margin-right: 5px;
-    padding-right: 5px;
-    border-left: solid #bcbcbc 1px;
-    border-right: solid #bcbcbc 1px;
+	margin-left: 5px;
+	padding-left: 5px;
+	margin-right: 5px;
+	padding-right: 5px;
+	border-left: solid #bcbcbc 1px;
+	border-right: solid #bcbcbc 1px;
 }
 
 
 .stateCanvas {
-    border: solid 1px black;
+	border: solid 1px black;
 }
 
 .autDisplay {
-    margin:15px;
+	margin:15px;
 }
 
 .btn-primary {
-    width: 80%;
-    margin: 10px auto;
+	width: 80%;
+	margin: 10px auto;
 }
 
 .nav-tabs > li > a {
-    background-color: #eeeeee;
-    color: cadetblue;
-    -webkit-border-radius: 0px;
-    -moz-border-radius: 0px;
-    border-radius: 0px;
-    margin-right: 0px;
-    margin-left: 2px;
+	background-color: #eeeeee;
+	color: cadetblue;
+	-webkit-border-radius: 0px;
+	-moz-border-radius: 0px;
+	border-radius: 0px;
+	margin-right: 0px;
+	margin-left: 2px;
 }
 
 .nav-tabs > li > a:hover {
-    background-color: brown;
-    color: white;
+	background-color: brown;
+	color: white;
 }
 
 .nav-tabs > li.active > a{
-    color: brown;
-    background-color: white;
+	color: brown;
+	background-color: white;
 }
 
 .resultHead {
-    clear:both;
+	clear:both;
 }
 
 .CodeMirror {
-    background-color: #e5e5e5;
+	background-color: #e5e5e5;
 }
 
 .CodeMirror-linenumbers {
-    background-color: darkgray;
-    border-right: solid 1px black;
+	background-color: darkgray;
+	border-right: solid 1px black;
 }
 
 .CodeMirror-linenumber {
-    color: white;
+	color: white;
 }
 
 .split1 {
-    margin-top: 10px;
-    margin-bottom: 10px;
+	margin-top: 10px;
+	margin-bottom: 10px;
 }
 
 .split2 {
-    margin-top: 5px;
-    margin-bottom: 5px;
+	margin-top: 5px;
+	margin-bottom: 5px;
 }
 
 #input {
-    margin-top:30px;
+	margin-top:30px;
 }
 
 #inputInner {
-    width : 60%;
-    margin: auto;
+	width : 60%;
+	margin: auto;
 }
 
 #inputPrompt {
-    text-align: center;
-    margin-bottom: 3px;
-    margin-top: 8px;
+	text-align: center;
+	margin-bottom: 3px;
+	margin-top: 8px;
 }
 
 .inputElement {
-    width: 90%;
-    margin-bottom: 3px;
-    padding: 4px;
+	width: 90%;
+	margin-bottom: 3px;
+	padding: 4px;
 }
 
 #options {
-    text-align: center;
-    margin-top: 10px;
+	text-align: center;
+	margin-top: 10px;
 }
 
 #options > table {
-    width: 100%;
-    margin: 10px;
+	width: 100%;
+	margin: 10px;
 }
 
 #tikzNode {
-    text-align: left;
-    width: 80%;
-    margin: 10px auto;
-    background-color: lightgray;
-    border: solid 1px black;
+	text-align: left;
+	width: 80%;
+	margin: 10px auto;
+	background-color: lightgray;
+	border: solid 1px black;
 }
 
 #optionShowHide {
-    font-size: 10pt;
+	font-size: 10pt;
 }
 
 #result .collapsing {
-    -webkit-transition: none;
-    transition: none;
+	-webkit-transition: none;
+	transition: none;
 }
 
 
 .error {
-    border: solid brown 1px;
-    margin: 10px;
-    padding: 5px;
-    color: black;
-    background-color: #ffd7cf
+	border: solid brown 1px;
+	margin: 10px;
+	padding: 5px;
+	color: black;
+	background-color: #ffd7cf
 }
 
 .error p {
-    font-family: monospace;
+	font-family: monospace;
 }
 
 @media (min-width: 768px) {
-    .container {
-        max-width: 750px;
-    }
+	.container {
+		max-width: 750px;
+	}
 }
