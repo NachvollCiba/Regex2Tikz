@@ -1,12 +1,10 @@
-/**
- * Created by dennis on 06/12/15.
- */
-
+import * as TC from './tikzCreation.js';
+import * as DC from './datastructs.js';
 
 const ZOOM_STEP = 2;
 const ZOOM_MAX = 100;
 const STATE_RAD = .5;
-const SNAP_RAD = .25;
+export const SNAP_RAD = .25;
 const LBL_OFFSET = .15;
 
 function CanvasController(canvas, automaton, controlElem) {
@@ -155,7 +153,7 @@ function CanvasController(canvas, automaton, controlElem) {
                 posY < -realRad || posY > height + realRad) {
                 return; // state is not visible
             }
-            ctx.fillText(toInternalID(state.name), posX, posY);
+            ctx.fillText(TC.toInternalID(state.name), posX, posY);
         });
 
         // draw the INCOMING LINE to the START STATE
@@ -168,7 +166,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     function labelDir(fromState, toState) {
-        return (discreetDirection(fromState.position, toState.position) * 2) % DIRECTIONS.ALL;
+        return (discreetDirection(fromState.position, toState.position) * 2) % TC.DIRECTIONS.ALL;
     }
 
     this.drawTransitions = function(ctx) {
@@ -212,8 +210,8 @@ function CanvasController(canvas, automaton, controlElem) {
 
                 if (state.incoming.has(nextState)) {
                     that.drawBendedArrow(ctx, state.position, nextState.position);
-                } else if (!equal(state.position, nextState.position)) { // nothing to draw if both states are at the same spot
-                    var dir = normalize(sub(nextState.position, state.position));
+                } else if (!DC.equal(state.position, nextState.position)) { // nothing to draw if both states are at the same spot
+                    var dir = DC.normalize(DC.sub(nextState.position, state.position));
 
                     var startX = Math.round(posX + realRad * dir[0]);
                     var startY = Math.round(posY - realRad * dir[1]);
@@ -266,16 +264,16 @@ function CanvasController(canvas, automaton, controlElem) {
                     // determine position
                     const offset = Math.round(LBL_OFFSET * zoom);
                     switch (entry[1].placement) {
-                        case DIRECTIONS.ABOVE:
+                        case TC.DIRECTIONS.ABOVE:
                             midY -= offset;
                             break;
-                        case DIRECTIONS.BELOW:
+                        case TC.DIRECTIONS.BELOW:
                             midY += offset;
                             break;
-                        case DIRECTIONS.LEFT:
+                        case TC.DIRECTIONS.LEFT:
                             midX -= offset;
                             break;
-                        case DIRECTIONS.RIGHT:
+                        case TC.DIRECTIONS.RIGHT:
                             midX += offset;
                             break;
                     }
@@ -343,15 +341,15 @@ function CanvasController(canvas, automaton, controlElem) {
         const dis = 3*STATE_RAD;// distance in world coordinates
         const angle = 5.75959; // 30°
 
-        var dir =  scalarMult(normalize(sub(pos2, pos1)), STATE_RAD);
+        var dir =  DC.scalarMult(DC.normalize(DC.sub(pos2, pos1)), STATE_RAD);
 
-        var start = add(pos1, rotate(dir,  angle));
-        var end   = sub(pos2, rotate(dir, -angle));
+        var start = DC.add(pos1, rotate(dir,  angle));
+        var end   = DC.sub(pos2, rotate(dir, -angle));
 
         var midX = start[0] + (end[0] - start[0]) / 2;
         var midY = start[1] + (end[1] - start[1]) / 2;
 
-        scalarMultInPlace(dir, dis);
+        DC.scalarMultInPlace(dir, dis);
         var control = [midX + dir[1], midY - dir[0]];
 
         // translate from world to screen coordinates
@@ -369,31 +367,31 @@ function CanvasController(canvas, automaton, controlElem) {
         const dis = 3*STATE_RAD;// distance in world coordinates
         const angle = 5.75959; // 30°
 
-        var dir =  scalarMult(normalize(sub(pos2, pos1)), STATE_RAD);
+        var dir =  DC.scalarMult(DC.normalize(DC.sub(pos2, pos1)), STATE_RAD);
 
-        var start = add(pos1, rotate(dir,  angle));
-        var end   = sub(pos2, rotate(dir, -angle));
+        var start = DC.add(pos1, DC.rotate(dir,  angle));
+        var end   = DC.sub(pos2, DC.rotate(dir, -angle));
 
         var midX = start[0] + (end[0] - start[0]) / 2;
         var midY = start[1] + (end[1] - start[1]) / 2;
 
-        scalarMultInPlace(dir, dis);
+        DC.scalarMultInPlace(dir, dis);
         var labelPos = [midX + dir[1], midY - dir[0]];
         this.toScreen(labelPos);
 
         // draw label
         var lblOffset = Math.round(LBL_OFFSET * camera.zoom + 10);
         switch (lblDirection) {
-            case DIRECTIONS.ABOVE:
+            case TC.DIRECTIONS.ABOVE:
                 labelPos[1] -= lblOffset;
                 break;
-            case DIRECTIONS.BELOW:
+            case TC.DIRECTIONS.BELOW:
                 labelPos[1] += lblOffset;
                 break;
-            case DIRECTIONS.LEFT:
+            case TC.DIRECTIONS.LEFT:
                 labelPos[0] -= lblOffset;
                 break;
-            case DIRECTIONS.RIGHT:
+            case TC.DIRECTIONS.RIGHT:
                 labelPos[0] += lblOffset;
                 break;
         }
@@ -409,25 +407,25 @@ function CanvasController(canvas, automaton, controlElem) {
 
         var dir, mid, control1, control2;
         switch(direction) {
-            case DIRECTIONS.ABOVE:
+            case TC.DIRECTIONS.ABOVE:
                 dir = [0,-realRad];
                 mid = [x, y - realRad - loopDis];
                 control1 = [x - loopExc, mid[1]];
                 control2 = [x + loopExc, mid[1]];
                 break;
-            case DIRECTIONS.BELOW:
+            case TC.DIRECTIONS.BELOW:
                 dir = [0,realRad];
                 mid = [x, y + realRad + loopDis];
                 control1 = [x + loopExc, mid[1]];
                 control2 = [x - loopExc, mid[1]];
                 break;
-            case DIRECTIONS.LEFT:
+            case TC.DIRECTIONS.LEFT:
                 dir = [-realRad,0];
                 mid = [x - realRad - loopDis, y];
                 control1 = [mid[0], y + loopExc];
                 control2 = [mid[0], y - loopExc];
                 break;
-            case DIRECTIONS.RIGHT:
+            case TC.DIRECTIONS.RIGHT:
                 dir = [realRad,0];
                 mid = [x + realRad + loopDis, y];
                 control1 = [mid[0], y - loopExc];
@@ -458,22 +456,22 @@ function CanvasController(canvas, automaton, controlElem) {
         var lblPos, mid, dir;
 
         switch (direction) {
-            case DIRECTIONS.ABOVE:
+            case TC.DIRECTIONS.ABOVE:
                 dir = [0,-realRad];
                 mid = y - realRad - loopDis;
                 lblPos = [x, mid - lblOffset];
                 break;
-            case DIRECTIONS.BELOW:
+            case TC.DIRECTIONS.BELOW:
                 dir = [0,realRad];
                 mid = y + realRad + loopDis;
                 lblPos = [x, mid + lblOffset];
                 break;
-            case DIRECTIONS.LEFT:
+            case TC.DIRECTIONS.LEFT:
                 dir = [-realRad,0];
                 mid = x - realRad - loopDis;
                 lblPos = [mid - lblOffset, y];
                 break;
-            case DIRECTIONS.RIGHT:
+            case TC.DIRECTIONS.RIGHT:
                 dir = [realRad,0];
                 mid = x + realRad + loopDis;
                 lblPos = [mid + lblOffset, y];
@@ -486,16 +484,16 @@ function CanvasController(canvas, automaton, controlElem) {
 
     function setTextAlign(ctx, direction) {
         switch(direction) {
-            case DIRECTIONS.ABOVE:
+            case TC.DIRECTIONS.ABOVE:
                 ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
                 break;
-            case DIRECTIONS.BELOW:
+            case TC.DIRECTIONS.BELOW:
                 ctx.textAlign = "center"; ctx.textBaseline = "hanging";
                 break;
-            case DIRECTIONS.LEFT:
+            case TC.DIRECTIONS.LEFT:
                 ctx.textAlign = "right"; ctx.textBaseline = "middle";
                 break;
-            case DIRECTIONS.RIGHT:
+            case TC.DIRECTIONS.RIGHT:
                 ctx.textAlign = "left"; ctx.textBaseline = "middle";
                 break;
         }
@@ -539,7 +537,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     function updateTransitionDirs(state) {
-        state.freeDirs = state.isStart? DIRECTIONS.ALL - DIRECTIONS.LEFT : DIRECTIONS.ALL;
+        state.freeDirs = state.isStart? TC.DIRECTIONS.ALL - TC.DIRECTIONS.LEFT : TC.DIRECTIONS.ALL;
         var dir;
 
         for (var entry of state.outgoing.entries()) {
@@ -580,7 +578,7 @@ function CanvasController(canvas, automaton, controlElem) {
     };
 
     this.buildSpatial = function() {
-        spatial = new SpatialStruct(SNAP_RAD);
+        spatial = new DC.SpatialStruct(SNAP_RAD);
 
         automaton.forEach(function(state) {
             spatial.put(state);
@@ -782,3 +780,5 @@ function CanvasController(canvas, automaton, controlElem) {
         that.drawAutomaton();
     });
 }
+
+export { CanvasController };

@@ -1,16 +1,13 @@
-/**
- * Created by dennis on 09/11/15.
- */
-
 // utility function for 2d vectors, stored as arrays
+export const NORTH  = [ 0,-1];
+export const SOUTH  = [ 0, 1];
+export const EAST   = [ 1, 0];
+export const WEST   = [-1, 0];
+export const ORIGIN = [ 0, 0];
 
-const NORTH  = [ 0,-1];
-const SOUTH  = [ 0, 1];
-const EAST   = [ 1, 0];
-const WEST   = [-1, 0];
-const ORIGIN = [ 0, 0];
+export const DIRECTIONS = {LEFT: 1, BELOW: 2, RIGHT: 4, ABOVE: 8, ALL: 15};
 
-function normalize(vec) {
+export function normalize(vec) {
     var distance = len(vec);
     if (distance == 0) {
         throw Error("Cannot normalize vector (0,0)");
@@ -18,77 +15,77 @@ function normalize(vec) {
     return [vec[0] / distance, vec[1] / distance];
 }
 
-function euclideanDistance(vec1, vec2) {
+export function euclideanDistance(vec1, vec2) {
     return Math.sqrt(Math.pow(vec1[0] - vec2[0], 2) +
         Math.pow(vec1[1] - vec2[1], 2));
 }
 
-function len(vec) {
+export function len(vec) {
     return euclideanDistance([0, 0], vec);
 }
 
-function sub(vec1, vec2) {
+export function sub(vec1, vec2) {
     return [vec1[0] - vec2[0], vec1[1] - vec2[1]];
 }
 
-function subInPlace(vec, toSub) {
+export function subInPlace(vec, toSub) {
     vec[0] -= toSub[0]; vec[1] -= toSub[1];
     return vec;
 }
 
-function add(vec1, vec2) {
+export function add(vec1, vec2) {
     return [vec1[0] + vec2[0], vec1[1] + vec2[1]];
 }
 
-function addInPlace(vec, toAdd) {
+export function addInPlace(vec, toAdd) {
     vec[0] += toAdd[0]; vec[1] += toAdd[1];
     return vec;
 }
 
-function scalarMult(vec, s) {
+export function scalarMult(vec, s) {
     return [vec[0] * s, vec[1] * s];
 }
 
-function scalarMultInPlace(vec, s) {
+export function scalarMultInPlace(vec, s) {
     vec[0] *= s; vec[1] *= s;
     return vec;
 }
 
-function scalarDiv(vec, s) {
+export function scalarDiv(vec, s) {
     return [vec[0] / s, vec[1] / s];
 }
 
-function dot(vec1, vec2) {
+export function dot(vec1, vec2) {
     return vec1[0] * vec2[0] + vec1[1] * vec2[1];
 }
 
-function angle(vec1, vec2) {
+export function angle(vec1, vec2) {
     return Math.acos(dot(vec1, vec2) / (len(vec1) * len(vec2)));
 }
 
-function rotate(vec, angle) {
+export function rotate(vec, angle) {
     return [vec[0] * Math.cos(angle) - vec[1] * Math.sin(angle),
             vec[0] * Math.sin(angle) + vec[1] * Math.cos(angle)];
 }
 
-function round(vec) {
+export function round(vec) {
     return [Math.round(vec[0]), Math.round(vec[1])];
 }
 
-function roundInPlace(vec) {
+export function roundInPlace(vec) {
     vec[0] = Math.round(vec[0]); vec[1] = Math.round(vec[1]);
     return vec;
 }
 
-function clone(vec) {
+export function clone(vec) {
     return [vec[0], vec[1]];
 }
 
-function equal(vec1, vec2) {
+export function equal(vec1, vec2) {
     return vec1[0] == vec2[0] && vec1[1] == vec2[1];
 }
 
-function discreetDirection(fromVec, toVec) {
+export function discreetDirection(fromVec, toVec) {
     // figure out in what direction the edge goes
     var pos = sub(toVec, fromVec);
     var edgeAngle = angle(SOUTH, pos);
@@ -122,7 +119,7 @@ function discreetDirection(fromVec, toVec) {
  * @param gridWidth
  * @constructor
  */
-function SpatialStruct(gridWidth) {
+export function SpatialStruct(gridWidth) {
     // first array is for right / below, second array for left / above
     this.rows = [[], []];
     this.cols = [[], []];

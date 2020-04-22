@@ -1,11 +1,6 @@
-/**
- * Created by dennis on 25/10/15.
- */
+export const EPS = ""; // constant for epsilon
 
-const EPS = ""; // constant for epsilon
-
-//
-function nfa2dfa(nfa, alphabet, withSink) {
+export function nfa2dfa(nfa, alphabet, withSink) {
     // empty automaton
     if (nfa.length == 0) {
         return [];
@@ -126,7 +121,7 @@ function epsClosure(state, recursive) {
     return [closure, hasFinal];
 }
 
-function minimize(dfa) {
+export function minimize(dfa) {
     var eqStatesMap = new Map(); // maps each state to the set of (myhill-neurode) equivalent states
 
     // initialization: every state is equivalent to every other state with the same isFinal flag
@@ -287,7 +282,7 @@ function State(name, isStart, isFinal) {
 }
 
 
-function RegexParser(regex) {
+export function RegexParser(regex) {
     /**
      * This class implements a simple LL(1) - Parser for regular expressions.
      * Will compile the regex into an nondeterministic finite automaton (NFA)

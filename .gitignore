@@ -1,3 +1,7 @@
 .idea
 bower_components
 profiles
+node_modules/
+.yarn-integrity
+*.log
+

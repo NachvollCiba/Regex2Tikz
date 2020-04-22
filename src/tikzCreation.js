@@ -1,12 +1,12 @@
-/**
- * Created by dennis on 25/10/15.
- */
+import EPS from './automaton.js';
+import * as DS from './datastructs.js';
+import * as CC from './canvascontrol.js';
 
 
-const DIRECTIONS = {LEFT: 1, BELOW: 2, RIGHT: 4, ABOVE: 8, ALL: 15};
+export const DIRECTIONS = {LEFT: 1, BELOW: 2, RIGHT: 4, ABOVE: 8, ALL: 15};
 const DIRECTIONS_STRINGS = [null, "left", "below", null, "right", null, null, null, "above"]; // array for reverse lookup
 
-function convertToTikz(nfa) {
+export function convertToTikz(nfa) {
     initializeStateMeta(nfa);
     computeStateMeta(nfa);
     layoutAut(nfa);
@@ -68,7 +68,7 @@ function computeLabelPlacement(nfa) {
 
         for (var entry of state.outgoing.entries()) {
             var nextState = entry[0];
-            var dir = discreetDirection(state.position, nextState.position);
+            var dir = DS.discreetDirection(state.position, nextState.position);
             entry[1].placement = (dir*2) % DIRECTIONS.ALL;
 
             // mark the direction as occupied
@@ -173,11 +173,11 @@ function generateAlphabetString(alphSet, eps) {
 
 function alignAutomaton(automaton, gridWidth) {
     automaton.forEach(function(state) {
-        state.position = scalarMult(round(scalarDiv(state.position, gridWidth)), gridWidth);
+        state.position = DS.scalarMult(DS.round(DS.scalarDiv(state.position, gridWidth)), gridWidth);
     });
 }
 
-function toInternalID(name) {
+export function toInternalID(name) {
     return name.toString()
         .replace(/(\s|,|\.|\{|\}|_)/g, ""); // remove whitespace, punctuation, brackets and underscores
 }
@@ -213,11 +213,11 @@ function layoutAut(states) {
 
         // apply "gravitational" force towards center (0,0)
         for (var x = 0; x < states.length; x++) {
-            var length = len(states[x].position);
-            unit = length > 0? normalize(states[x].position) : [0,0];
+            var length = DS.len(states[x].position);
+            unit = length > 0? DS.normalize(states[x].position) : [0,0];
             val = -GRAV_CONST * Math.pow(length, 1); // F = -c*r
 
-            addInPlace(movDeltas[x], scalarMult(unit, val));
+            DS.addInPlace(movDeltas[x], DS.scalarMult(unit, val));
         }
 
         for (var x = 0; x < states.length-1; x++) {
@@ -225,41 +225,39 @@ function layoutAut(states) {
             for (var y = x + 1; y < states.length; y++) {
                 var movDelta = [0, 0];
 
-                if (equal(states[x].position, states[y].position)) {
+                if (DS.equal(states[x].position, states[y].position)) {
                     // add random vector to avoid divide-by-zero
-                    //console.log(states[x].position);
-                    addInPlace(states[x].position, [Math.random() + .001, Math.random() + .001]);
+                    DS.addInPlace(states[x].position, [Math.random() + .001, Math.random() + .001]);
                 }
 
                 // compute repulsive force for every other state
-                var dist = euclideanDistance(states[x].position, states[y].position);
+                var dist = DS.euclideanDistance(states[x].position, states[y].position);
                 val = NODE_CHARGE * Math.pow(1 / dist, 2); // F = c/(r**2)
-                unit = normalize(sub(states[x].position, states[y].position));
-                addInPlace(movDelta, scalarMult(unit, val));
+                unit = DS.normalize(DS.sub(states[x].position, states[y].position));
+                DS.addInPlace(movDelta, DS.scalarMult(unit, val));
 
                 // compute attracting force for every connected state
                 if (states[x].incoming.has(states[y]) || states[y].incoming.has(states[x])) {
                     val = -EDGE_CONST * Math.pow(dist, 1); // F = -Dx
-                    addInPlace(movDelta, scalarMult(unit, Math.max(-100, val)));
+                    DS.addInPlace(movDelta, DS.scalarMult(unit, Math.max(-100, val)));
                 }
 
 
                 // store the move deltas for the states
-                addInPlace(movDeltas[x], movDelta);
-                subInPlace(movDeltas[y], movDelta);
+                DS.addInPlace(movDeltas[x], movDelta);
+                DS.subInPlace(movDeltas[y], movDelta);
 
-                totalDelta += euclideanDistance(ORIGIN, movDelta);
+                totalDelta += DS.euclideanDistance(DS.ORIGIN, movDelta);
             }
         }
 
         // apply translations
         for (x = 0; x < states.length; x++) {
-            addInPlace(states[x].position, movDeltas[x]);
-
+            DS.addInPlace(states[x].position, movDeltas[x]);
         }
 
         // align automaton to grid
-        alignAutomaton(states, SNAP_RAD);
+        alignAutomaton(states, CC.SNAP_RAD);
     }
 }
 

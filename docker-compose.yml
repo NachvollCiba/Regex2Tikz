@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+  regex2tikz:
+    build: .
+    container_name: regex2tikz
+    ports:
+      - "8080:80"
+    environment:
+      - WEBROOT=/var/www/dist
