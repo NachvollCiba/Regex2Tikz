@@ -542,15 +542,15 @@ function CanvasController(canvas, automaton, controlElem) {
 		var dir;
 
 		for (var entry of state.outgoing.entries()) {
-			dir = discreetDirection(state.position, entry[0].position);
+			dir = DS.discreetDirection(state.position, entry[0].position);
 			state.freeDirs &= ~dir;
 		}
 		for (var nextState of state.incoming) {
-			dir = discreetDirection(state.position, nextState.position);
+			dir = DS.discreetDirection(state.position, nextState.position);
 			state.freeDirs &= ~dir;
 		}
 
-		state.loop.placement = freeDirection(state.freeDirs);
+		state.loop.placement = TC.freeDirection(state.freeDirs);
 	}
 
 	this.updateStatePositional = function(state) {
@@ -693,7 +693,7 @@ function CanvasController(canvas, automaton, controlElem) {
 					}
 				} else if (snap == "grid") {
 					selected.position =
-						scalarMultInPlace(roundInPlace(scalarDiv(selected.canvasPos, SNAP_RAD)), SNAP_RAD);
+						DS.scalarMultInPlace(DS.roundInPlace(DS.scalarDiv(selected.canvasPos, SNAP_RAD)), SNAP_RAD);
 				} else if (snap == "none") {
 					selected.position = clone(selected.canvasPos);
 				}

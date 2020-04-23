@@ -122,7 +122,7 @@ function fillResult(elem, automaton) {
 
 		// initialize the controller for this automatons canvas
 		var canvas = elem.find("canvas");
-		data.canvasCntrl = new CanvasController(canvas, automaton, elem.find(".canvasControl"));
+		data.canvasCntrl = new CanvasController(canvas, automaton, elem.find("#canvasControl"));
 
 		// bind the function for the render button
 		var renderBtn = elem.find("#btnRender");

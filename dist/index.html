@@ -30,7 +30,7 @@
 		<div id="inputInner" class="card-body">
 			<div id="inputPrompt"><b>Start by inserting a regular expression.</b></div>
 
-			<input type="text" id="regex" placeholder="(a|b)*c" autofocus class="form-input" list="regexList">
+			<input id="regex" placeholder="(a|b)*c" autofocus class="form-input" list="regexList">
 			<button onclick="submit()" class="btn btn-primary">Generate Automaton!</button>
 		</div>
 
@@ -183,7 +183,7 @@
 							<span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
 						</div>
 						<!-- Automaton Editor -->
-						<div class="tab-content" id="structure_minDfa">
+						<div class="tab-content text-center" id="structure_minDfa">
 							<canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
 							<ul class="menu text-center" id="canvasControl">
 								<li class="menu-item">
@@ -209,7 +209,8 @@
 									<select class="form-select" id="slSnap">
 										<option value="grid">Snap to Grid</option>
 										<option value="neighbour">Snap to Neighbour</option>
-										<option value="non">Snap to Nothing</option>
+										<option value="none">Snap to Nothing</option>
+									</select>
 								</li>
 							</ul>
 						</div>

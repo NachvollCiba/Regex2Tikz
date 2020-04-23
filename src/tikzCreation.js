@@ -268,7 +268,7 @@ function removeElem(array, elem) {
 	}
 }
 
-function freeDirection(bitVector) {
+export function freeDirection(bitVector) {
 	if ((bitVector & DIRECTIONS.ABOVE) > 0) {
 		return DIRECTIONS.ABOVE;
 	} else if ((bitVector & DIRECTIONS.RIGHT) > 0) {
