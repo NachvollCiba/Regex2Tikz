@@ -1,4 +1,4 @@
-import EPS from './automaton.js';
+import { EPS } from './automaton.js';
 import * as DS from './datastructs.js';
 import * as CC from './canvascontrol.js';
 
@@ -88,7 +88,7 @@ function computeLabelPlacement(nfa) {
 }
 
 
-function generateCode(nfa) {
+export function generateCode(nfa) {
 	var tikz  = "\\usetikzlibrary{automata, positioning}\n";
 	tikz += "\\begin{tikzpicture}\n";
 

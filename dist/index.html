@@ -10,159 +10,221 @@
 	<script src="main.js"></script>
 
 	<link rel="stylesheet" type="text/css" href="style.css"/>
-
 </head>
 
 
 
 <body>
-<div class="container text-center">
-<h1>Regex<em>2</em>Ti<em>k</em>Z</h1>
-<p>
-	<em>A simple tool for converting a regular expression to Ti<em>k</em>Z code for the corresponding automaton.</em>
-</p>
-<div class="group" id="input">
-	<div id="inputInner">
-		<div id="inputPrompt"><b>Start by inserting a regular expression.</b></div>
-		<input type="text" id="regex" placeholder="(a|b)*c" autofocus class="inputElement" list="regexList">
-		<input type="button" value="Generate Automaton" onclick="submit()" class="inputElement">
-	</div>
+	<div class="content-wrapper container">
+	<h1 class="text-center">Regex<em>2</em>Ti<em>k</em>Z</h1>
+
+	<p>
+		A tool for converting a regular expression to Ti<em>k</em>Z code for the corresponding automaton.
+	</p>
+
+	<div class="card" id="input">
+		<div class="card-header">
+			<div class="card-title h5">Input</div>
+		</div>
+
+		<div id="inputInner" class="card-body">
+			<div id="inputPrompt"><b>Start by inserting a regular expression.</b></div>
+
+			<input type="text" id="regex" placeholder="(a|b)*c" autofocus class="form-input" list="regexList">
+			<button onclick="submit()" class="btn btn-primary">Generate Automaton!</button>
+		</div>
 
 
-	<div class="error" id="parserError" hidden>
-		<h4>Error!</h4>
-		<p></p>
-	</div>
+		<div class="error" id="parserError" hidden>
+			<h4>Error!</h4>
+			<p></p>
+		</div>
 
-	<hr width="75%" class="split1">
-
-	<b id="optionsShowHide" class="spoilerLink" onclick="toggleOptions();">[+] Show options</b>
-	<div id="optionsWrapper" class="collapse">
-		<div id="options" class="left">
-			<table><tbody>
-			<tr>
-				<td class="left">Symbol to use for the empty word: </td>
-				<td class="left" colspan="2"><input type="text" id="emptySymb" value="\varepsilon" list="emptyWordList"></td>
-			</tr>
-			<tr>
-				<td class="left">State name prefix: </td>
-				<td class="left"><input type="text" id="statePrefix" value=""></td>
-				<td class="left">
-					<input type="checkbox" id="cbIndexSubscript" disabled checked>
-					<label for="cbIndexSubscript">Index as subscript</label>
-				</td>
-			</tr>
-			<tr>
-				<td class="left">Start numbering at: </td>
-				<td class="left" colspan="2"><input type="number" id="numberStart" value="0"></td>
-			</tr>
-			<tr>
-				<td style="padding-top:15px !important" class="left" colspan="1">
-					<input type="checkbox" id="showNFA">
-					<label for="showNFA">Also show NFA</label>
-				</td>
-				<td style="padding-top:15px !important" class="left" colspan="2">
-					<input type="checkbox" id="showDFA">
-					<label for="showDFA">Also show non-minimal powerset DFA</label>
-				</td>
-			</tr>
-			<tr>
-				<td class="left" colspan="3"><label><input type="checkbox" id="generateSink">Generate sink state</label></td>
-			</tr>
-			</tbody></table>
+		<div class="accordion">
+			<input id="accordion-options" type="checkbox" name="accordion-checkbox" hidden>
+			<label class="accordion-header c-hand" for="accordion-options">
+				<i class="icon icon-arrow-right mr-1"></i> Toggle Options
+			</label>
+			<div class="accordion-body">
+				<div id="options" class="form-horizontal">
+					<div class="form-group">
+						<div class="col-4 col-sm-12">
+							Empty word symbol
+						</div>
+						<div class="col-8 col-sm-12">
+							<input type="text" class="form-input" id="emptySymb" value="\varepsilon" list="emptyWordList">
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-4 col-sm-12">
+							State name prefix
+						</div>
+						<div class="col-8 col-sm-12">
+							<input type="text" class="form-input" id="statePrefix" value="" placeholder="e.g.: 'q'">
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-8 col-sm-12 col-ml-auto">
+							<label class="form-switch">
+								<input type="checkbox" id="cbIndexSubscript" disabled checked>
+								<i class="form-icon"></i>
+								Index as subscript
+							</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-4 col-sm-12">
+							Start state numbering at
+						</div>
+						<div class="col-8 col-sm-12">
+							<input type="number" class="form-input" id="numberStart" value="0">
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-4 col-sm-12">
+							Generator options
+						</div>
+						<div class="col-8 col-sm-12 col-ml-auto">
+							<label class="form-switch">
+								<input type="checkbox" id="showNFA">
+								<i class="form-icon"></i>
+								Generate NFA
+							</label>
+						</div>
+						<div class="col-8 col-sm-12 col-ml-auto">
+							<label class="form-switch">
+								<input type="checkbox" id="showDFA">
+								<i class="form-icon"></i>
+								Generate non-minimal powerset DFA
+							</label>
+						</div>
+						<div class="col-8 col-sm-12 col-ml-auto">
+							<label class="form-switch">
+								<input type="checkbox" id="generateSink">
+								<i class="form-icon"></i>
+								Generate sink state
+							</label>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 
-	<hr width="75%" class="split1">
-</div>
-<div hidden id="statistics" class="group" style="text-align:center">
-	<h4>Info</h4>
-	<hr width="50%" class="split1">
-	<table style="margin-bottom:5px">
-		<tr>
-			<td class="left">Original expression: </td>
-			<td id="origRegexDisplay" class="left"></td>
-		</tr>
-		<tr>
-			<td class="left">Simplified expression: </td>
-			<td id="simpleRegexDisplay" class="left"></td>
-		</tr>
-		<tr>
-			<td class="left">Alphabet: </td>
-			<td id="alphDisplay" class="left"></td>
-		</tr>
-		<tr>
-			<td class="left">Size of the minimal automaton: </td>
-			<td class="left"> <span id="autSizeDisplay"></span> states</td>
-		</tr>
-	</table>
-</div>
-<div hidden id="result">
-	<div class="group result" id="nfaDiv">
-		<h2 id="nfaHeader" class="spoilerLink" onclick="collapse($('#nfa'), 'toggle');">
-			NFA &#x25BC;
-		</h2>
-		<div id="nfa" hidden></div></div>
+	<br/>
 
-	<div class="group result" id="dfaDiv">
-		<h2 id="dfaHeader" class="spoilerLink" onclick="collapse($('#dfa'), 'toggle');">
-			Non-minimal powerset DFA &#x25BC;
-		</h2>
-		<div id="dfa" hidden></div></div>
+	<div id="statistics" hidden>
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title h5">Info</div>
+		</div>
 
-	<div class="group result" id="minDfaDiv">
-		<h2 id="minDfaHeader" class="spoilerLink" onclick="collapse($('#minDfa'), 'toggle');">
-			Minimized DFA &#x25BC;
-		</h2>
+		<div class="card-body">
+			<div class="columns">
+				<div class="column col-auto">Original expression</div>
+				<div class="column"><span id="origRegexDisplay"></span></div>
+			</div>
+			<div class="columns">
+				<div class="column col-auto">Simplified expression</div>
+				<div class="column"><span id="simpleRegexDisplay"></span></div>
+			</div>
+			<div class="columns">
+				<div class="column col-auto">Alphabet</span></div>
+				<div class="column"><span id="alphDisplay"></span></div>
+			</div>
+			<div class="columns">
+				<div class="column col-auto">Minimal automaton size</div>
+				<div class="column"><span id="autSizeDisplay"></span></div>
+			</div>
+		</div>
+	</div>
+	</div>
 
-		<div id="minDfa" hidden>
-			<hr width="90%">
-			<ul class="nav nav-tabs">
-				<li class="active">
-					<a href="#tikz_minDfa" data-toggle="tab" id="tikztab_minDfa">Ti<em>k</em>Z Code</a>
-				</li>
-				<li>
-					<a href="#latex_minDfa" data-toggle="tab" id="latextab_minDfa">LaTeX: Preview</a>
-				</li>
-				<li>
-					<a href="#structure_minDfa" data-toggle="tab" id="structuretab_minDfa">Editor</a>
-				</li>
-			</ul>
+	<br/>
 
-			<div class="tab-content">
-				<div class="tab-pane active" id="tikz_minDfa">
-					<div id="tikzNode"></div>
-					<button type="button" class="btn btn-primary" id="btnClipboard">Copy to clipboard</button>
-				</div>
-				<div class="tab-pane" id="latex_minDfa">
-					<div hidden class="error"><h4>No preview available.</h4><p></p></div>
-					<img src="" class="autDisplay"/> <br>
-					<button type="button" class="btn btn-primary" id="btnRender">Render again...</button><br>
-					<span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
-				</div>
-				<div class="tab-pane" id="structure_minDfa">
-					<div class="canvasControl">
-						<table><tbody><tr>
-							<td><label><input type="checkbox" id="cbGrid"> Show Grid</label></td>
-							<td><button type="button" class="btn btn-default" id="btnZoomIn">+</button>
-								<button type="button" class="btn btn-default" id="btnZoomOut">-</button></td>
-							<td><button type="button" class="btn btn-default" id="btnCenter">Center</button>
-								<button type="button" class="btn btn-default" id="btnAlign">Align to grid</button></td>
-							<td><label>Snap to <select id="slSnap">
-								<option value="grid">Grid</option>
-								<option value="neighbour">Neighbour</option>
-								<option value="none">Nothing</option>
-							</select></label></td>
-						</tr></tbody></table>
+	<div hidden id="result">
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title h5">Minimal DFA</div>
+		</div>
+		
+		<div class="card-body">
+			<div id="minDfaDiv">
+				<div id="minDfa" hidden>
+					<input type="radio" id="minDfaTikz" name="minDfaTabs" class="tab-locator" hidden checked />
+					<input type="radio" id="minDfaLatex" name="minDfaTabs" class="tab-locator" hidden />
+					<input type="radio" id="minDfaStructure" name="minDfaTabs" class="tab-locator" hidden />
+
+					<ul class="tab tab-block">
+						<li class="tab-item c-hand">
+							<label for="minDfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="minDfaLatex"><a>LaTeX: Preview</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="minDfaStructure"><a>Editor</a></label>
+						</li>
+					</ul>
+
+					<div class="tabs">
+						<!-- TIKZ CODE -->
+						<div class="tab-content" id="tikz_minDfa">
+							<pre class="code" data-lang="TikZ">
+								<code id="tikzCode"></code>
+							</pre>
+						</div>
+						<!-- Rendered Preview -->
+						<div class="tab-content" id="latex_minDfa">
+							<div hidden class="toast toast-error error">
+								<h5>No preview available.</h5><p></p>
+							</div>
+							<img src="" class="autDisplay"/> <br>
+							<span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
+						</div>
+						<!-- Automaton Editor -->
+						<div class="tab-content" id="structure_minDfa">
+							<canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
+							<ul class="menu text-center" id="canvasControl">
+								<li class="menu-item">
+									<label class="form-switch">
+										<input type="checkbox" id="cbGrid">
+										<i class="form-icon"></i>
+										Show Grid
+									</label>
+								</li>
+								<li class="menu-item">
+									<button class="btn" id="btnZoomIn"><i class="icon icon-plus"></i></button>
+								</li>
+								<li class="menu-item">
+									<button class="btn" id="btnZoomOut"><i class="icon icon-minus"></i></button>
+								</li>
+								<li class="menu-item">
+									<button class="btn" id="btnCenter">Center</button>
+								</li>
+								<li class="menu-item">
+									<button class="btn" id="btnAlign">Align to grid</button>
+								</li>
+								<li class="menu-item">
+									<select class="form-select" id="slSnap">
+										<option value="grid">Snap to Grid</option>
+										<option value="neighbour">Snap to Neighbour</option>
+										<option value="non">Snap to Nothing</option>
+								</li>
+							</ul>
+						</div>
 					</div>
-					<hr class="split2">
-					<canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
-<span style="font-size: 8pt;">Find the source code on <a href="https://github.com/NachvollCiba/Regex2Tikz" target="_blank">github.</a></span>
+
+
+<div class="text-right">
+	<span style="font-size: 8pt;">Find the source code on <a href="https://github.com/NachvollCiba/Regex2Tikz" target="_blank">github.</a></span>
+</div>
+
 <!-- datalists -->
 <datalist id="emptyWordList">
 	<option value="\varepsilon">&epsilon;</option>

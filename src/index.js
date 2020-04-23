@@ -2,15 +2,15 @@ import $ from 'jquery';
 window.jQuery = $;
 window.$ = $;
 
-import 'bootstrap';
-
 import CodeMirror from 'codemirror/lib/codemirror.js';
 import 'codemirror/lib/codemirror.css';
 
 import { RegexParser, nfa2dfa, minimize } from './automaton.js';
 import { CanvasController } from './canvascontrol.js';
-import { convertToTikz } from './tikzCreation.js';
+import { convertToTikz, generateCode } from './tikzCreation.js';
 
+import 'spectre.css/dist/spectre.min.css';
+import 'spectre.css/dist/spectre-icons.min.css';
 
 
 var ajaxRequests = new Set(); // most recent ajax requests
@@ -18,8 +18,6 @@ var elemData = new Map(); // contains additional data for each id
 
 // Initialization
 $(function() {
-	$('[data-toggle="tooltip"]').tooltip();
-
 	elemData.set("nfa", {
 		initialized: false,
 		canvasCntrl: null,
@@ -81,18 +79,14 @@ function submit() {
 			$("#dfaDiv").hide();
 		}
 
+		$("#minDfa").show();
 		fillResult(minDfaDiv, minDfa);
-
-		if (showNfa || showDfa) {
-			collapse(minDfaDiv, "hide");
-			collapse(dfaDiv, "hide");
-			collapse(nfaDiv, "hide");
-		}
 
 		// fill the statistics div
 		var alpha = []
 		parser.alphabet.forEach(function(s) { alpha.push(s) });
 		
+		$("#result").show();
 		$("#parserError").hide();
 		$("#statistics").show();
 		$("#alphaDisplay").text("{" + alpha.sort() + "}");
@@ -101,6 +95,7 @@ function submit() {
 		$("#autSizeDisplay").text(minDfa.length);
 	} catch (e) {
 		$("#parserError").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br/>"));
+		console.log(e);
 	}
 }
 
@@ -127,27 +122,14 @@ function fillResult(elem, automaton) {
 
 		// initialize the controller for this automatons canvas
 		var canvas = elem.find("canvas");
-		data.canvasCntrl = new CanvasController(canvas, automaton, elem.find(".canvasControll"));
+		data.canvasCntrl = new CanvasController(canvas, automaton, elem.find(".canvasControl"));
 
 		// bind the function for the render button
 		var renderBtn = elem.find("#btnRender");
-		var tikzDispl = CodeMirror(elem.find("#tikzNode")[0], {
-			readOnly: true,
-			lineNumbers: true,
-		});
-
-		tikzDispl.on("focus", function() {
-			tikzDispl.execCommand("selectAll");
-		});
-		tikzDispl.on("blur", function() {
-			tikzDispl.setCursor({line:0,ch:0}); // clear selection
-		});
+		var tikzDispl = $("#tikzCode");
 		data.displ = tikzDispl;
 
 		var renderImg = elem.find("img");
-		renderBtn.click(function() {
-			fetchLatexRenderedPng(data.tikz, renderImg, renderBtn, elem.find(".error"));
-		});
 
 		elem.find("#btnClipboard").click(function() {
 			tikzDispl.focus();
@@ -168,16 +150,18 @@ function fillResult(elem, automaton) {
 	}
 
 	// populate the element contents
-	tikzDispl.setValue(convertToTikz(automaton));
-	data.tikz = tikzDispl.getValue();
+	var tikzCode = convertToTikz(automaton);
+	tikzDispl.text(tikzCode);
+	data.tikz = tikzCode;
 	fetchLatexRenderedPng(data.tikz, renderImg, renderBtn, elem.find(".error"));
 
 	// update the canvas
 	var cntrl = data.canvasCntrl;
 	cntrl.loadAutomaton(automaton);
 	cntrl.changelistener = function() {
-		tikzDispl.setValue(generateCode(automaton));
-		data.tikz = tikzDispl.getValue();
+		tikzCode = generateCode(automaton);
+		tikzDispl.text(tikzCode);
+		data.tikz = tikzCode;
 	};
 
 	cntrl.drawAutomaton();
@@ -210,10 +194,11 @@ function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
 
 			ajaxRequests.delete(ajaxRequest);
 		},
-		error: function() {
+		error: function(jqXHR, textStatus, errorThrown) {
 			img.attr("src", "").hide();
 			button.prop("disabled", false);
-			errorDiv.show().find("p").html("Error connecting to server");
+			errorDiv.show().find("p").text("Error connecting to server (" + textStatus + ")");
+			console.log(errorThrown);
 			ajaxRequests.delete(ajaxRequest);
 		}
 	});
@@ -221,41 +206,5 @@ function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
 	ajaxRequests.add(ajaxRequest);
 }
 
-function toggleOptions() {
-	var wrapper = $("#optionsWrapper").collapse("toggle");
-	
-	if (wrapper.attr("aria-expanded") == "true") {
-		$("#optionsShowHide").text("[-] Hide options");
-	} else {
-		$("#optionsShowHide").text("[+] Show options");
-	}
-}
-
-function collapse(elem, how) {
-	switch (how) {
-		case "toggle":
-			if (elem.is(":visible")) {
-				elem.hide();
-				elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▲/, "▼"));
-			} else {
-				elem.show();
-				elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
-				window.scroll(0, elem.offset().top);
-				elemData.get(elem.attr("id")).displ.refresh();
-			}
-			break;
-		case "show":
-			elem.show();
-			elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▼/, "▲"));
-			window.scroll(0, elem.offset().top);
-			elemData.get(elem.attr("id")).displ.refresh();
-			break;
-		case "hide":
-			elem.hide();
-			elem.parent().find("h2").text(elem.parent().find("h2").text().replace(/▲/, "▼"));
-			break;
-	}
-}
 
 window.submit = submit;
-window.toggleOptions = toggleOptions;

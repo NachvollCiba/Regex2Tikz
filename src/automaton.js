@@ -231,7 +231,7 @@ function renameStates(states) {
 }
 
 // class for NFA states
-function State(name, isStart, isFinal) {
+export function State(name, isStart, isFinal) {
 	if (typeof(isStart)==='undefined') {
 		isStart = false;
 	}

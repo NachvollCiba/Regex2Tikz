@@ -1,5 +1,6 @@
 import * as TC from './tikzCreation.js';
-import * as DC from './datastructs.js';
+import * as DS from './datastructs.js';
+import { State } from './automaton.js';
 
 const ZOOM_STEP = 2;
 const ZOOM_MAX = 100;
@@ -166,7 +167,7 @@ function CanvasController(canvas, automaton, controlElem) {
 	};
 
 	function labelDir(fromState, toState) {
-		return (discreetDirection(fromState.position, toState.position) * 2) % TC.DIRECTIONS.ALL;
+		return (DS.discreetDirection(fromState.position, toState.position) * 2) % TC.DIRECTIONS.ALL;
 	}
 
 	this.drawTransitions = function(ctx) {
@@ -210,8 +211,8 @@ function CanvasController(canvas, automaton, controlElem) {
 
 				if (state.incoming.has(nextState)) {
 					that.drawBendedArrow(ctx, state.position, nextState.position);
-				} else if (!DC.equal(state.position, nextState.position)) { // nothing to draw if both states are at the same spot
-					var dir = DC.normalize(DC.sub(nextState.position, state.position));
+				} else if (!DS.equal(state.position, nextState.position)) { // nothing to draw if both states are at the same spot
+					var dir = DS.normalize(DS.sub(nextState.position, state.position));
 
 					var startX = Math.round(posX + realRad * dir[0]);
 					var startY = Math.round(posY - realRad * dir[1]);
@@ -341,15 +342,15 @@ function CanvasController(canvas, automaton, controlElem) {
 		const dis = 3*STATE_RAD;// distance in world coordinates
 		const angle = 5.75959; // 30°
 
-		var dir =  DC.scalarMult(DC.normalize(DC.sub(pos2, pos1)), STATE_RAD);
+		var dir =  DS.scalarMult(DS.normalize(DS.sub(pos2, pos1)), STATE_RAD);
 
-		var start = DC.add(pos1, rotate(dir,  angle));
-		var end   = DC.sub(pos2, rotate(dir, -angle));
+		var start = DS.add(pos1, DS.rotate(dir,  angle));
+		var end   = DS.sub(pos2, DS.rotate(dir, -angle));
 
 		var midX = start[0] + (end[0] - start[0]) / 2;
 		var midY = start[1] + (end[1] - start[1]) / 2;
 
-		DC.scalarMultInPlace(dir, dis);
+		DS.scalarMultInPlace(dir, dis);
 		var control = [midX + dir[1], midY - dir[0]];
 
 		// translate from world to screen coordinates
@@ -367,15 +368,15 @@ function CanvasController(canvas, automaton, controlElem) {
 		const dis = 3*STATE_RAD;// distance in world coordinates
 		const angle = 5.75959; // 30°
 
-		var dir =  DC.scalarMult(DC.normalize(DC.sub(pos2, pos1)), STATE_RAD);
+		var dir =  DS.scalarMult(DS.normalize(DS.sub(pos2, pos1)), STATE_RAD);
 
-		var start = DC.add(pos1, DC.rotate(dir,  angle));
-		var end   = DC.sub(pos2, DC.rotate(dir, -angle));
+		var start = DS.add(pos1, DS.rotate(dir,  angle));
+		var end   = DS.sub(pos2, DS.rotate(dir, -angle));
 
 		var midX = start[0] + (end[0] - start[0]) / 2;
 		var midY = start[1] + (end[1] - start[1]) / 2;
 
-		DC.scalarMultInPlace(dir, dis);
+		DS.scalarMultInPlace(dir, dis);
 		var labelPos = [midX + dir[1], midY - dir[0]];
 		this.toScreen(labelPos);
 
@@ -578,7 +579,7 @@ function CanvasController(canvas, automaton, controlElem) {
 	};
 
 	this.buildSpatial = function() {
-		spatial = new DC.SpatialStruct(SNAP_RAD);
+		spatial = new DS.SpatialStruct(SNAP_RAD);
 
 		automaton.forEach(function(state) {
 			spatial.put(state);
@@ -645,7 +646,7 @@ function CanvasController(canvas, automaton, controlElem) {
 			var state = automaton[i];
 
 			// test if clicked on one of the states
-			if (euclideanDistance(state.position, [mouseX, mouseY]) < STATE_RAD) {
+			if (DS.euclideanDistance(state.position, [mouseX, mouseY]) < STATE_RAD) {
 				selected = state; moving = state;
 				selected.canvasPos = [selected.position[0], selected.position[1]];
 				findAligned(state);
@@ -744,10 +745,10 @@ function CanvasController(canvas, automaton, controlElem) {
 
 	// register the listeners
 	//canvas.on("tap", this.canvasMouseDown);
-	canvas.on("vmouseup", this.canvasMouseUp);
-	canvas.on("vmousedown", this.canvasMouseDown);
-	canvas.on("vmousemove", this.canvasMouseMove);
-	canvas.on("vmouseover", this.canvasMouseOver);
+	canvas.on("mouseup", this.canvasMouseUp);
+	canvas.on("mousedown", this.canvasMouseDown);
+	canvas.on("mousemove", this.canvasMouseMove);
+	canvas.on("mouseover", this.canvasMouseOver);
 	canvas.bind('mousewheel DOMMouseScroll', this.canvasMouseWheel);
 
 	// register listeners for the control panel
@@ -758,7 +759,7 @@ function CanvasController(canvas, automaton, controlElem) {
 	control.find("#btnZoomOut").click(function() {
 		that.zoomOut(3*ZOOM_STEP);
 	});
-
+	console.log(control.find("#cbGrid"));
 	control.find("#cbGrid").click(function() {
 		showGrid = control.find("#cbGrid").is(":checked");
 		that.drawAutomaton();

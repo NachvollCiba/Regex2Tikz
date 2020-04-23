@@ -1,13 +1,3 @@
-td {
-	padding-top: 2px;
-	padding-right: 7px;
-}
-
-table {
-	margin: auto;
-	text-align:center;
-}
-
 label {
 	font-weight: 100;
 }
@@ -18,6 +8,11 @@ input:disabled+label {
 
 textarea {
 	background-color: lightgray;
+}
+
+.content-wrapper {
+	padding-top: 1rem;
+	max-width: 800px;
 }
 
 .group{
@@ -82,26 +77,6 @@ textarea {
 	margin: 10px auto;
 }
 
-.nav-tabs > li > a {
-	background-color: #eeeeee;
-	color: cadetblue;
-	-webkit-border-radius: 0px;
-	-moz-border-radius: 0px;
-	border-radius: 0px;
-	margin-right: 0px;
-	margin-left: 2px;
-}
-
-.nav-tabs > li > a:hover {
-	background-color: brown;
-	color: white;
-}
-
-.nav-tabs > li.active > a{
-	color: brown;
-	background-color: white;
-}
-
 .resultHead {
 	clear:both;
 }
@@ -119,16 +94,6 @@ textarea {
 	color: white;
 }
 
-.split1 {
-	margin-top: 10px;
-	margin-bottom: 10px;
-}
-
-.split2 {
-	margin-top: 5px;
-	margin-bottom: 5px;
-}
-
 #input {
 	margin-top:30px;
 }
@@ -144,22 +109,6 @@ textarea {
 	margin-top: 8px;
 }
 
-.inputElement {
-	width: 90%;
-	margin-bottom: 3px;
-	padding: 4px;
-}
-
-#options {
-	text-align: center;
-	margin-top: 10px;
-}
-
-#options > table {
-	width: 100%;
-	margin: 10px;
-}
-
 #tikzNode {
 	text-align: left;
 	width: 80%;
@@ -168,8 +117,8 @@ textarea {
 	border: solid 1px black;
 }
 
-#optionShowHide {
-	font-size: 10pt;
+#options {
+	margin: 0 1rem;
 }
 
 #result .collapsing {
@@ -178,20 +127,27 @@ textarea {
 }
 
 
-.error {
-	border: solid brown 1px;
-	margin: 10px;
-	padding: 5px;
-	color: black;
-	background-color: #ffd7cf
+#inputInner > button {
+	width: 100%;
 }
 
-.error p {
-	font-family: monospace;
+
+.tab-content {
+	display: none;
 }
 
-@media (min-width: 768px) {
-	.container {
-		max-width: 750px;
-	}
+.tab-locator:nth-of-type(1):checked ~ .tab-block > .tab-item:nth-of-type(1) > label > a,
+ .tab-locator:nth-of-type(2):checked ~ .tab-block > .tab-item:nth-of-type(2) > label > a,
+ .tab-locator:nth-of-type(3):checked ~ .tab-block > .tab-item:nth-of-type(3) > label > a {
+	border-bottom-color: #5764c6;
+	color: #5764c6;
 }
+
+.tab-locator:nth-of-type(1):checked ~ .tabs > .tab-content:nth-of-type(1),
+ .tab-locator:nth-of-type(2):checked ~ .tabs > .tab-content:nth-of-type(2),
+ .tab-locator:nth-of-type(3):checked ~ .tabs > .tab-content:nth-of-type(3) {
+	display:block;
+}
+
+#canvasControl { overflow: hidden; }
+#canvasControl > li { float: left; }
