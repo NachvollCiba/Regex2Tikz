@@ -121,12 +121,10 @@ function fillResult(elem, automaton) {
 		tikzDispl.focus(function() { $(this).select(); });
 		tikzDispl.click(function() { $(this).select(); });
 
-		var renderImg = elem.find("img");
 		data.initialized = true;
 	} else {
 		// simply find the (existing) elements
 		tikzDispl = data.displ;
-		renderImg = elem.find("img");
 		renderBtn = elem.find("#btnRender");
 	}
 
@@ -134,7 +132,9 @@ function fillResult(elem, automaton) {
 	var tikzCode = convertToTikz(automaton);
 	tikzDispl.text(tikzCode);
 	data.tikz = tikzCode;
-	fetchLatexRenderedPng(data.tikz, renderImg, renderBtn, elem.find(".error"));
+	//elem.find(".latexTab").click(function() {
+		fetchLatexRenderedPng(data.tikz, elem.find(".rendertab"), renderBtn, elem.find(".error"))
+	//});
 
 	// update the canvas
 	var cntrl = data.canvasCntrl;
@@ -149,9 +149,12 @@ function fillResult(elem, automaton) {
 }
 
 
-function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
+function fetchLatexRenderedPng(tikz, div, button, errorDiv) {
 	button.prop("disabled", true);
-	img.attr("src", "img/loading.gif").attr("width", "128").show();
+
+	var img = div.find("img");
+	img.hide();
+	div.addClass("loading loading-lg");
 	errorDiv.hide();
 
 	var ajaxRequest = $.ajax({
@@ -167,15 +170,19 @@ function fetchLatexRenderedPng(tikz, img, button, errorDiv) {
 			// adjust DOM elements
 			button.prop("disabled", false);
 			if (response["status"] == "success") {
-				img.attr("src", response["url"]).attr("width", width);
+				div.removeClass("loading loading-lg");
+				img.attr("src", response["url"]).attr("width", width).show();
 			} else {
+				div.removeClass("loading loading-lg");
 				img.attr("src", "").hide();
 				errorDiv.show().find("p").html("Error fetching png<br/>" + response["message"]);
+				console.log(response);
 			}
 
 			ajaxRequests.delete(ajaxRequest);
 		},
 		error: function(jqXHR, textStatus, errorThrown) {
+			div.removeClass("loading loading-lg");
 			img.attr("src", "").hide();
 			button.prop("disabled", false);
 			errorDiv.show().find("p").text("Error connecting to server (" + textStatus + ")");

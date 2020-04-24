@@ -4,7 +4,17 @@ services:
   regex2tikz:
     build: .
     container_name: regex2tikz
-    ports:
-      - "8080:80"
     environment:
       - WEBROOT=/var/www/dist
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.regex2tikz.entrypoints=webs"
+      - "traefik.http.routers.regex2tikz.rule=Host(`regex2tikz.nachvollciba.de`)"
+      - "traefik.http.routers.regex2tikz.tls=true"
+      - "traefik.http.routers.regex2tikz.tls.certresolver=le"
+    networks:
+      - reverseproxy
+
+networks:
+  reverseproxy:
+    external: true

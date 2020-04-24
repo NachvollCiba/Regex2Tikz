@@ -14,7 +14,7 @@ function quicklatex_encode($string) {
 
 function get_quicklatex_img_url($tikz) {
 
-	$service_url = "http://www.quicklatex.com/latex3.f";
+	$service_url = "https://www.quicklatex.com/latex3.f";
 
 	// request parameters
 	$fontsize = "17px";
@@ -76,11 +76,21 @@ function get_quicklatex_img_url($tikz) {
 									   "status" => "error",
 									   "message" => "LaTeX-code could not be compiled (automaton too large?)"));
 			}
+		} else {
+			return json_encode(array(
+				"status" => "error",
+				"message" => "Unexpected response from quicklatex",
+				"response" => $server_resp,
+			));
 		}
 	}
+
+
 	return json_encode(array(
 						   "status" => "error",
-						   "message" => "Encountered an unspecified error"));
+						   "message" => "Encountered an unspecified error",
+						   "input" => $tikz,
+						   "formula" => $formula));
 }
 
 // return the url of the rendered latex image
