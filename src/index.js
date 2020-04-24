@@ -83,19 +83,17 @@ function submit() {
 		minDfaDiv.show();
 		fillResult(minDfaDiv, minDfa);
 
-		// fill the statistics div
 		var alpha = []
 		parser.alphabet.forEach(function(s) { alpha.push(s) });
+		console.log("Original regex: " + parser.origInput);
+		console.log("Simplified regex: " + parser.simpleInput);
+		console.log("Alphabet of the expression: {" + alpha.sort().join(", ") + "}");
+		console.log("Size of the minimal DFA (# of states): " + minDfa.length);
 		
 		$("#result").show();
 		$("#parserError").hide();
-		$("#statistics").show();
-		$("#alphDisplay").text("{" + alpha.sort().join(", ") + "}");
-		$("#simpleRegexDisplay").text(parser.simpleInput);
-		$("#origRegexDisplay").text(parser.origInput);
-		$("#autSizeDisplay").text(minDfa.length);
 	} catch (e) {
-		$("#parserError").show().find("p").html(e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br/>"));
+		$("#parserError").show().find("p").html("Invalid expression: " + e.message.replace(/ /g, "&nbsp;").replace(/\n/g, "<br/>"));
 		console.log(e);
 	}
 }

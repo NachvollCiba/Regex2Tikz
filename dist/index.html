@@ -113,110 +113,76 @@
 
 	<br/>
 
-	<div id="statistics" hidden>
-	<div class="card">
-		<div class="card-header">
-			<div class="card-title h5">Info</div>
-		</div>
-
-		<div class="card-body">
-			<div class="columns">
-				<div class="column col-auto">Original expression</div>
-				<div class="column"><span id="origRegexDisplay"></span></div>
-			</div>
-			<div class="columns">
-				<div class="column col-auto">Simplified expression</div>
-				<div class="column"><span id="simpleRegexDisplay"></span></div>
-			</div>
-			<div class="columns">
-				<div class="column col-auto">Alphabet</span></div>
-				<div class="column"><span id="alphDisplay"></span></div>
-			</div>
-			<div class="columns">
-				<div class="column col-auto">Minimal automaton size</div>
-				<div class="column"><span id="autSizeDisplay"></span></div>
-			</div>
-		</div>
-	</div>
-	</div>
-
-	<br/>
-
 	<div hidden id="result">
 
 	<!-- MINIMAL DFA -->
-	<div class="card">
+	<div class="card" id="minDfa">
 		<div class="card-header">
 			<div class="card-title h5">Minimal DFA</div>
 		</div>
 		
 		<div class="card-body">
-			<div id="minDfaDiv">
-				<div id="minDfa" hidden>
-					<input type="radio" id="minDfaTikz" name="minDfaTabs" class="tab-locator" hidden checked />
-					<input type="radio" id="minDfaLatex" name="minDfaTabs" class="tab-locator" hidden />
-					<input type="radio" id="minDfaStructure" name="minDfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="minDfaTikz" name="minDfaTabs" class="tab-locator" hidden checked />
+			<input type="radio" id="minDfaLatex" name="minDfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="minDfaStructure" name="minDfaTabs" class="tab-locator" hidden />
 
-					<ul class="tab tab-block">
-						<li class="tab-item c-hand">
-							<label for="minDfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+			<ul class="tab tab-block">
+				<li class="tab-item c-hand">
+					<label for="minDfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="minDfaLatex"><a>LaTeX: Preview</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="minDfaStructure"><a>Editor</a></label>
+				</li>
+			</ul>
+
+			<div class="tabs">
+				<!-- TIKZ CODE -->
+				<div class="tab-content" id="tikz_minDfa">
+					<pre class="code" data-lang="TikZ">
+						<code id="tikzCode"></code>
+					</pre>
+				</div>
+				<!-- Rendered Preview -->
+				<div class="tab-content" id="latex_minDfa">
+					<div hidden class="toast toast-error error">
+						<h5>No preview available.</h5><p></p>
+					</div>
+					<img src="" class="autDisplay"/> <br>
+					<span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
+				</div>
+				<!-- Automaton Editor -->
+				<div class="tab-content text-center" id="structure_minDfa">
+					<canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
+					<ul class="menu text-center" id="canvasControl">
+						<li class="menu-item">
+							<label class="form-switch">
+								<input type="checkbox" id="cbGrid">
+								<i class="form-icon"></i> Show Grid
+							</label>
 						</li>
-						<li class="tab-item c-hand">
-							<label for="minDfaLatex"><a>LaTeX: Preview</a></label>
+						<li class="menu-item">
+							<button class="btn" id="btnZoomIn"><i class="icon icon-plus"></i></button>
 						</li>
-						<li class="tab-item c-hand">
-							<label for="minDfaStructure"><a>Editor</a></label>
+						<li class="menu-item">
+							<button class="btn" id="btnZoomOut"><i class="icon icon-minus"></i></button>
+						</li>
+						<li class="menu-item">
+							<button class="btn" id="btnCenter">Center</button>
+						</li>
+						<li class="menu-item">
+							<button class="btn" id="btnAlign">Align to grid</button>
+						</li>
+						<li class="menu-item">
+							<select class="form-select" id="slSnap">
+								<option value="grid">Snap to Grid</option>
+								<option value="neighbour">Snap to Neighbour</option>
+								<option value="none">Snap to Nothing</option>
+							</select>
 						</li>
 					</ul>
-
-					<div class="tabs">
-						<!-- TIKZ CODE -->
-						<div class="tab-content" id="tikz_minDfa">
-							<pre class="code" data-lang="TikZ">
-								<code id="tikzCode"></code>
-							</pre>
-						</div>
-						<!-- Rendered Preview -->
-						<div class="tab-content" id="latex_minDfa">
-							<div hidden class="toast toast-error error">
-								<h5>No preview available.</h5><p></p>
-							</div>
-							<img src="" class="autDisplay"/> <br>
-							<span style="font-size: smaller;margin-top:5px">LaTeX-rendering powered by <a href="http://www.quicklatex.com" target="_blank">quicklatex.com</a>.</span>
-						</div>
-						<!-- Automaton Editor -->
-						<div class="tab-content text-center" id="structure_minDfa">
-							<canvas width="500" height="500" class="stateCanvas autDisplay"></canvas>
-							<ul class="menu text-center" id="canvasControl">
-								<li class="menu-item">
-									<label class="form-switch">
-										<input type="checkbox" id="cbGrid">
-										<i class="form-icon"></i>
-										Show Grid
-									</label>
-								</li>
-								<li class="menu-item">
-									<button class="btn" id="btnZoomIn"><i class="icon icon-plus"></i></button>
-								</li>
-								<li class="menu-item">
-									<button class="btn" id="btnZoomOut"><i class="icon icon-minus"></i></button>
-								</li>
-								<li class="menu-item">
-									<button class="btn" id="btnCenter">Center</button>
-								</li>
-								<li class="menu-item">
-									<button class="btn" id="btnAlign">Align to grid</button>
-								</li>
-								<li class="menu-item">
-									<select class="form-select" id="slSnap">
-										<option value="grid">Snap to Grid</option>
-										<option value="neighbour">Snap to Neighbour</option>
-										<option value="none">Snap to Nothing</option>
-									</select>
-								</li>
-							</ul>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -225,65 +191,57 @@
 	<br/>
 
 	<!-- NON-MINIMAL DFA -->
-	<div class="card">
+	<div class="card" id="dfa">
 		<div class="card-header">
 			<div class="card-title h5">Powerset DFA</div>
 		</div>
 		
 		<div class="card-body">
-			<div id="dfaDiv">
-				<div id="dfa" hidden>
-					<input type="radio" id="dfaTikz" name="dfaTabs" class="tab-locator" hidden checked />
-					<input type="radio" id="dfaLatex" name="dfaTabs" class="tab-locator" hidden />
-					<input type="radio" id="dfaStructure" name="dfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="dfaTikz" name="dfaTabs" class="tab-locator" hidden checked />
+			<input type="radio" id="dfaLatex" name="dfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="dfaStructure" name="dfaTabs" class="tab-locator" hidden />
 
-					<ul class="tab tab-block">
-						<li class="tab-item c-hand">
-							<label for="dfaTikz"><a>Ti<em>k</em>Z Code</a></label>
-						</li>
-						<li class="tab-item c-hand">
-							<label for="dfaLatex"><a>LaTeX: Preview</a></label>
-						</li>
-						<li class="tab-item c-hand">
-							<label for="dfaStructure"><a>Editor</a></label>
-						</li>
-					</ul>
+			<ul class="tab tab-block">
+				<li class="tab-item c-hand">
+					<label for="dfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="dfaLatex"><a>LaTeX: Preview</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="dfaStructure"><a>Editor</a></label>
+				</li>
+			</ul>
 
-					<div class="tabs"><!-- filled by js --></div>
-				</div>
-			</div>
+			<div class="tabs"><!-- filled by js --></div>
 		</div>
 	</div>
 
-	<br/>
+<br/>
 
 	<!-- NFA -->
-	<div class="card">
+	<div class="card" id="nfa">
 		<div class="card-header">
 			<div class="card-title h5">NFA</div>
 		</div>
 		<div class="card-body">
-			<div id="nfaDiv">
-				<div id="nfa" hidden>
-					<input type="radio" id="nfaTikz" name="nfaTabs" class="tab-locator" hidden checked />
-					<input type="radio" id="nfaLatex" name="nfaTabs" class="tab-locator" hidden />
-					<input type="radio" id="nfaStructure" name="nfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="nfaTikz" name="nfaTabs" class="tab-locator" hidden checked />
+			<input type="radio" id="nfaLatex" name="nfaTabs" class="tab-locator" hidden />
+			<input type="radio" id="nfaStructure" name="nfaTabs" class="tab-locator" hidden />
 
-					<ul class="tab tab-block">
-						<li class="tab-item c-hand">
-							<label for="nfaTikz"><a>Ti<em>k</em>Z Code</a></label>
-						</li>
-						<li class="tab-item c-hand">
-							<label for="nfaLatex"><a>LaTeX: Preview</a></label>
-						</li>
-						<li class="tab-item c-hand">
-							<label for="nfaStructure"><a>Editor</a></label>
-						</li>
-					</ul>
+			<ul class="tab tab-block">
+				<li class="tab-item c-hand">
+					<label for="nfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="nfaLatex"><a>LaTeX: Preview</a></label>
+				</li>
+				<li class="tab-item c-hand">
+					<label for="nfaStructure"><a>Editor</a></label>
+				</li>
+			</ul>
 
-					<div class="tabs"><!-- filled by js --></div>
-				</div>
-			</div>
+			<div class="tabs"><!-- filled by js --></div>
 		</div>
 	</div>
 </div>
