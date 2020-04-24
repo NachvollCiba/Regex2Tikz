@@ -2,9 +2,6 @@ import $ from 'jquery';
 window.jQuery = $;
 window.$ = $;
 
-import CodeMirror from 'codemirror/lib/codemirror.js';
-import 'codemirror/lib/codemirror.css';
-
 import { RegexParser, nfa2dfa, minimize } from './automaton.js';
 import { CanvasController } from './canvascontrol.js';
 import { convertToTikz, generateCode } from './tikzCreation.js';

@@ -9,7 +9,7 @@ module.exports = {
 	devServer: {
 		contentBase: './dist',
 	},
-	devtool: 'inline-source-map',
+	devtool: 'source-map',
 	module: {
 		rules: [
 			{
