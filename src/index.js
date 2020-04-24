@@ -115,21 +115,13 @@ function fillResult(elem, automaton) {
 
 		// bind the function for the render button
 		var renderBtn = elem.find("#btnRender");
-		var tikzDispl = $("#tikzCode");
+		var tikzDispl = elem.find(".tikzCode");
 		data.displ = tikzDispl;
 
+		tikzDispl.focus(function() { $(this).select(); });
+		tikzDispl.click(function() { $(this).select(); });
+
 		var renderImg = elem.find("img");
-
-		elem.find("#btnClipboard").click(function() {
-			tikzDispl.focus();
-			document.execCommand("copy");
-			this.focus();
-		});
-
-		elem.find("#tikztab_"+id).on("shown.bs.tab", function(e) {
-			data.displ.refresh();
-		});
-
 		data.initialized = true;
 	} else {
 		// simply find the (existing) elements

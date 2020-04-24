@@ -5,10 +5,13 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<title>Regex to Tikz</title>
-	<link rel="icon" type="image/png" href="img/favicon.ico">
+
+
+	<link rel="icon" type="image/png" href="img/favicon_16.png" sizes="16x16">
+	<link rel="icon" type="image/png" href="img/favicon_32.png" sizes="32x32">
+	<link rel="icon" type="image/png" href="img/favicon_96.png" sizes="96x96">
 
 	<script src="main.js"></script>
-
 	<link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 
@@ -141,9 +144,7 @@
 			<div class="tabs">
 				<!-- TIKZ CODE -->
 				<div class="tab-content" id="tikz_minDfa">
-					<pre class="code" data-lang="TikZ">
-						<code id="tikzCode"></code>
-					</pre>
+					<textarea readonly class="tikzCode form-input" rows="10"></textarea>
 				</div>
 				<!-- Rendered Preview -->
 				<div class="tab-content" id="latex_minDfa">

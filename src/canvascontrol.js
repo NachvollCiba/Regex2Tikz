@@ -759,7 +759,6 @@ function CanvasController(canvas, automaton, controlElem) {
 	control.find("#btnZoomOut").click(function() {
 		that.zoomOut(3*ZOOM_STEP);
 	});
-	console.log(control.find("#cbGrid"));
 	control.find("#cbGrid").click(function() {
 		showGrid = control.find("#cbGrid").is(":checked");
 		that.drawAutomaton();
