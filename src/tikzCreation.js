@@ -171,7 +171,7 @@ function generateAlphabetString(alphSet, eps) {
 	return result;
 }
 
-function alignAutomaton(automaton, gridWidth) {
+export function alignAutomaton(automaton, gridWidth) {
 	automaton.forEach(function(state) {
 		state.position = DS.scalarMult(DS.round(DS.scalarDiv(state.position, gridWidth)), gridWidth);
 	});

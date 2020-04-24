@@ -695,7 +695,7 @@ function CanvasController(canvas, automaton, controlElem) {
 					selected.position =
 						DS.scalarMultInPlace(DS.roundInPlace(DS.scalarDiv(selected.canvasPos, SNAP_RAD)), SNAP_RAD);
 				} else if (snap == "none") {
-					selected.position = clone(selected.canvasPos);
+					selected.position = DS.clone(selected.canvasPos);
 				}
 
 
@@ -771,7 +771,7 @@ function CanvasController(canvas, automaton, controlElem) {
 	});
 
 	control.find("#btnAlign").click(function() {
-		alignAutomaton(automaton, SNAP_RAD*2);
+		TC.alignAutomaton(automaton, SNAP_RAD*2);
 		that.drawAutomaton();
 		that.changelistener(automaton);
 	});

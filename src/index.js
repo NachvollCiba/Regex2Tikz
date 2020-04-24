@@ -42,6 +42,7 @@ $(function() {
 		$("#cbIndexSubscript").prop("disabled", prefixEmpty);
 	});
 
+	$(".error").hide();
 	$(".ui-loader").hide();
 });
 
@@ -66,20 +67,20 @@ function submit() {
 		var minDfaDiv = $("#minDfa");
 
 		if (showNfa) {
-			$("#nfaDiv").show();
+			nfaDiv.show();
 			fillResult(nfaDiv, nfa);
 		} else {
-			$("#nfaDiv").hide();
+			nfaDiv.hide();
 		}
 
 		if (showDfa) {
-			$("#dfaDiv").show();
+			dfaDiv.show();
 			fillResult(dfaDiv, dfa);
 		} else {
-			$("#dfaDiv").hide();
+			dfaDiv.hide();
 		}
 
-		$("#minDfa").show();
+		minDfaDiv.show();
 		fillResult(minDfaDiv, minDfa);
 
 		// fill the statistics div
@@ -89,7 +90,7 @@ function submit() {
 		$("#result").show();
 		$("#parserError").hide();
 		$("#statistics").show();
-		$("#alphaDisplay").text("{" + alpha.sort() + "}");
+		$("#alphDisplay").text("{" + alpha.sort().join(", ") + "}");
 		$("#simpleRegexDisplay").text(parser.simpleInput);
 		$("#origRegexDisplay").text(parser.origInput);
 		$("#autSizeDisplay").text(minDfa.length);
@@ -105,18 +106,11 @@ function fillResult(elem, automaton) {
 
 	if (!data.initialized) {
 		if (id != "minDfa") { // create the elements by cloning the min dfa prototype
-			var cloned = $("#minDfa").clone().attr("id", id);
+			var cloned = $("#minDfa").find(".tabs").clone()
 
 			// adjust ids and references
-			cloned.find("#tikz_minDfa").attr("id", "tikz_"+id);
-			cloned.find("#tikztab_minDfa").attr("id", "tikztab_"+id).attr("href", "#tikz_"+id);
-			cloned.find("#latex_minDfa").attr("id", "latex_"+id);
-			cloned.find("#latextab_minDfa").attr("id", "latextab_"+id).attr("href", "#latex_"+id);
-			cloned.find("#structure_minDfa").attr("id", "structure_"+id);
-			cloned.find("#structuretab_minDfa").attr("id", "structuretab_"+id).attr("href", "#structure_"+id);
 			cloned.find("#tikzNode").empty();
-
-			elem.replaceWith(cloned);
+			elem.find(".tabs").replaceWith(cloned);
 			elem = cloned;
 		}
 

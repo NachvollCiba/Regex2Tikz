@@ -35,7 +35,7 @@
 		</div>
 
 
-		<div class="error" id="parserError" hidden>
+		<div class="toast toast-error error" id="parserError" hidden>
 			<h4>Error!</h4>
 			<p></p>
 		</div>
@@ -143,6 +143,8 @@
 	<br/>
 
 	<div hidden id="result">
+
+	<!-- MINIMAL DFA -->
 	<div class="card">
 		<div class="card-header">
 			<div class="card-title h5">Minimal DFA</div>
@@ -215,6 +217,71 @@
 							</ul>
 						</div>
 					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<br/>
+
+	<!-- NON-MINIMAL DFA -->
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title h5">Powerset DFA</div>
+		</div>
+		
+		<div class="card-body">
+			<div id="dfaDiv">
+				<div id="dfa" hidden>
+					<input type="radio" id="dfaTikz" name="dfaTabs" class="tab-locator" hidden checked />
+					<input type="radio" id="dfaLatex" name="dfaTabs" class="tab-locator" hidden />
+					<input type="radio" id="dfaStructure" name="dfaTabs" class="tab-locator" hidden />
+
+					<ul class="tab tab-block">
+						<li class="tab-item c-hand">
+							<label for="dfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="dfaLatex"><a>LaTeX: Preview</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="dfaStructure"><a>Editor</a></label>
+						</li>
+					</ul>
+
+					<div class="tabs"><!-- filled by js --></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<br/>
+
+	<!-- NFA -->
+	<div class="card">
+		<div class="card-header">
+			<div class="card-title h5">NFA</div>
+		</div>
+		<div class="card-body">
+			<div id="nfaDiv">
+				<div id="nfa" hidden>
+					<input type="radio" id="nfaTikz" name="nfaTabs" class="tab-locator" hidden checked />
+					<input type="radio" id="nfaLatex" name="nfaTabs" class="tab-locator" hidden />
+					<input type="radio" id="nfaStructure" name="nfaTabs" class="tab-locator" hidden />
+
+					<ul class="tab tab-block">
+						<li class="tab-item c-hand">
+							<label for="nfaTikz"><a>Ti<em>k</em>Z Code</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="nfaLatex"><a>LaTeX: Preview</a></label>
+						</li>
+						<li class="tab-item c-hand">
+							<label for="nfaStructure"><a>Editor</a></label>
+						</li>
+					</ul>
+
+					<div class="tabs"><!-- filled by js --></div>
 				</div>
 			</div>
 		</div>
